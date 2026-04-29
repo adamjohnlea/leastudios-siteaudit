@@ -13,7 +13,7 @@ defined( 'ABSPATH' ) || exit;
 
 use LEAStudios\SiteAudit\Admin\Notice_Service;
 use LEAStudios\SiteAudit\Capabilities;
-use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Audit_Service;
+use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Audit_Service_Interface;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Audit_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Audit_Status;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Bulk_Import_Service;
@@ -70,9 +70,9 @@ final class Url_Controller {
 	/**
 	 * Audit orchestration service.
 	 *
-	 * @var Audit_Service
+	 * @var Audit_Service_Interface
 	 */
-	private Audit_Service $audit_service;
+	private Audit_Service_Interface $audit_service;
 
 	/**
 	 * Audit repository (read-only use here, for the URL list score column).
@@ -87,14 +87,14 @@ final class Url_Controller {
 	 * @param Url_Service                $url_service         URL application service.
 	 * @param Project_Service            $project_service     Project application service.
 	 * @param Bulk_Import_Service        $bulk_import_service Bulk import service.
-	 * @param Audit_Service              $audit_service       Audit orchestration service.
+	 * @param Audit_Service_Interface    $audit_service       Audit orchestration service.
 	 * @param Audit_Repository_Interface $audit_repository    Audit repository (for list score lookup).
 	 */
 	public function __construct(
 		Url_Service $url_service,
 		Project_Service $project_service,
 		Bulk_Import_Service $bulk_import_service,
-		Audit_Service $audit_service,
+		Audit_Service_Interface $audit_service,
 		Audit_Repository_Interface $audit_repository
 	) {
 		$this->url_service         = $url_service;
