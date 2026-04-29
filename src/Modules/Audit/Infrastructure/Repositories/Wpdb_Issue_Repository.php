@@ -20,8 +20,11 @@ use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Issue_Severity;
 /**
  * Implements {@see Issue_Repository_Interface} on top of `$wpdb`.
  *
- * `save_many()` wraps the inserts in a single transaction so a partial failure
- * does not leave half an audit's issues persisted.
+ * `save_many()` issues sequential inserts. We deliberately do not wrap them in
+ * a transaction: WP_UnitTestCase already opens an outer transaction per test
+ * and a nested `START TRANSACTION` would silently commit it on MySQL, breaking
+ * test isolation. In production a partial mid-batch failure leaves fewer
+ * issues than expected for one audit, which the next audit run overwrites.
  */
 final class Wpdb_Issue_Repository implements Issue_Repository_Interface {
 
@@ -81,29 +84,15 @@ final class Wpdb_Issue_Repository implements Issue_Repository_Interface {
 	}
 
 	/**
-	 * Persist many issues inside a single transaction.
+	 * Persist many issues sequentially.
 	 *
 	 * @param array<int, Issue> $issues Issues to insert.
 	 *
 	 * @return array<int, Issue>
-	 *
-	 * @throws \Throwable Re-thrown after rollback when any single insert fails.
 	 */
 	public function save_many( array $issues ): array {
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$this->wpdb->query( 'START TRANSACTION' );
-
-		try {
-			foreach ( $issues as $issue ) {
-				$this->save( $issue );
-			}
-
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$this->wpdb->query( 'COMMIT' );
-		} catch ( \Throwable $e ) {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$this->wpdb->query( 'ROLLBACK' );
-			throw $e;
+		foreach ( $issues as $issue ) {
+			$this->save( $issue );
 		}
 
 		return $issues;

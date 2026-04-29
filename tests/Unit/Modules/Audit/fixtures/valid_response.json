@@ -1,0 +1,66 @@
+{
+    "lighthouseResult": {
+        "categories": {
+            "accessibility": {
+                "score": 0.85
+            }
+        },
+        "audits": {
+            "color-contrast": {
+                "id": "color-contrast",
+                "title": "Background and foreground colors do not have a sufficient contrast ratio.",
+                "description": "Low-contrast text is difficult or impossible for many users to read.",
+                "score": 0,
+                "scoreDisplayMode": "binary",
+                "helpUrl": "https://dequeuniversity.com/rules/axe/4.10/color-contrast",
+                "details": {
+                    "items": [
+                        {
+                            "node": {
+                                "selector": "div.header > p.subtitle"
+                            }
+                        }
+                    ]
+                }
+            },
+            "image-alt": {
+                "id": "image-alt",
+                "title": "Image elements do not have [alt] attributes",
+                "description": "Informative elements should aim for short, descriptive alternate text.",
+                "score": 0,
+                "scoreDisplayMode": "binary",
+                "helpUrl": "https://dequeuniversity.com/rules/axe/4.10/image-alt",
+                "details": {
+                    "items": [
+                        {
+                            "node": {
+                                "selector": "img.hero-image"
+                            }
+                        }
+                    ]
+                }
+            },
+            "document-title": {
+                "id": "document-title",
+                "title": "Document has a <title> element",
+                "description": "The title gives screen reader users an overview of the page.",
+                "score": 1,
+                "scoreDisplayMode": "binary"
+            },
+            "html-has-lang": {
+                "id": "html-has-lang",
+                "title": "html element has a lang attribute",
+                "description": "If a page doesn't specify a lang attribute, a screen reader assumes that the page is in the default language.",
+                "score": 1,
+                "scoreDisplayMode": "binary"
+            },
+            "meta-viewport": {
+                "id": "meta-viewport",
+                "title": "meta viewport",
+                "description": "Informational",
+                "score": null,
+                "scoreDisplayMode": "informative"
+            }
+        }
+    }
+}
