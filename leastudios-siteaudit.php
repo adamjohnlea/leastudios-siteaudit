@@ -41,6 +41,13 @@ if ( ! file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 
 require_once __DIR__ . '/vendor/autoload.php';
 
+// Action Scheduler ships its own bootstrap that hooks into `plugins_loaded`
+// at priority -10 to register its load mechanism (it coordinates versions
+// across multiple plugins that bundle it). Require it here, before our
+// `plugins_loaded` callback, so the `as_*()` API is available by the time
+// our Plugin::init runs.
+require_once __DIR__ . '/vendor/woocommerce/action-scheduler/action-scheduler.php';
+
 /**
  * Initialize the plugin.
  *

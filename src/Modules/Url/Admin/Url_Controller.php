@@ -13,9 +13,9 @@ defined( 'ABSPATH' ) || exit;
 
 use LEAStudios\SiteAudit\Admin\Notice_Service;
 use LEAStudios\SiteAudit\Capabilities;
-use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Audit_Service_Interface;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Audit_Repository_Interface;
-use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Audit_Status;
+use LEAStudios\SiteAudit\Modules\Scheduler\Application\Services\Action_Enqueuer_Interface;
+use LEAStudios\SiteAudit\Modules\Scheduler\Application\Services\Tick_Dispatcher;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Bulk_Import_Service;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Project_Service;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Url_Service;
@@ -68,11 +68,11 @@ final class Url_Controller {
 	private Bulk_Import_Service $bulk_import_service;
 
 	/**
-	 * Audit orchestration service.
+	 * Async action enqueuer for the "Run audit now" button.
 	 *
-	 * @var Audit_Service_Interface
+	 * @var Action_Enqueuer_Interface
 	 */
-	private Audit_Service_Interface $audit_service;
+	private Action_Enqueuer_Interface $enqueuer;
 
 	/**
 	 * Audit repository (read-only use here, for the URL list score column).
@@ -87,20 +87,20 @@ final class Url_Controller {
 	 * @param Url_Service                $url_service         URL application service.
 	 * @param Project_Service            $project_service     Project application service.
 	 * @param Bulk_Import_Service        $bulk_import_service Bulk import service.
-	 * @param Audit_Service_Interface    $audit_service       Audit orchestration service.
+	 * @param Action_Enqueuer_Interface  $enqueuer            Async action enqueuer (for run-audit dispatch).
 	 * @param Audit_Repository_Interface $audit_repository    Audit repository (for list score lookup).
 	 */
 	public function __construct(
 		Url_Service $url_service,
 		Project_Service $project_service,
 		Bulk_Import_Service $bulk_import_service,
-		Audit_Service_Interface $audit_service,
+		Action_Enqueuer_Interface $enqueuer,
 		Audit_Repository_Interface $audit_repository
 	) {
 		$this->url_service         = $url_service;
 		$this->project_service     = $project_service;
 		$this->bulk_import_service = $bulk_import_service;
-		$this->audit_service       = $audit_service;
+		$this->enqueuer            = $enqueuer;
 		$this->audit_repository    = $audit_repository;
 	}
 
@@ -500,27 +500,18 @@ final class Url_Controller {
 	}
 
 	/**
-	 * Handle POST: run a PageSpeed audit for one URL synchronously.
+	 * Handle POST: queue an asynchronous audit for one URL.
 	 *
-	 * Routes to {@see Audit_Service::run_audit()}, which inserts an in-progress
-	 * audit row, calls PageSpeed, persists score + issues, writes a comparison
-	 * row when a previous run exists, and stamps `urls.last_audited_at`.
-	 * Per-strategy failures are recorded as FAILED audit rows; we surface a
-	 * useful error notice that points the user toward Settings.
+	 * Enqueues a `leastudios_siteaudit_run_audit` Action Scheduler action and
+	 * returns immediately. The actual PageSpeed call happens in a separate
+	 * worker request, so the user's click never blocks waiting for the API.
+	 * The de-duplication guard prevents stacking duplicate actions when the
+	 * button is double-clicked or a previous tick already queued the URL.
 	 *
 	 * @return void
 	 */
 	public function handle_run_audit(): void {
 		$this->guard_post( self::ACTION_RUN_AUDIT );
-
-		// PageSpeed calls take ~30s each; with audit_strategy=both that's two back-to-back,
-		// well past PHP's default max_execution_time. Lift the limit for this synchronous
-		// admin-post request only — the same mechanism wp-cron uses for long ticks.
-		if ( function_exists( 'wp_raise_memory_limit' ) ) {
-			wp_raise_memory_limit( 'admin' );
-		}
-		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- @ guards against environments where set_time_limit is disabled (safe_mode / disable_functions).
-		@set_time_limit( 0 );
 
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- guarded above by guard_post().
 		$id = isset( $_POST['id'] ) ? absint( wp_unslash( (string) $_POST['id'] ) ) : 0;
@@ -531,31 +522,17 @@ final class Url_Controller {
 			exit;
 		}
 
-		try {
-			$audits = $this->audit_service->run_audit( $id );
-
-			$failed = 0;
-			foreach ( $audits as $audit ) {
-				if ( Audit_Status::FAILED === $audit->status() ) {
-					++$failed;
-				}
-			}
-
-			if ( count( $audits ) > 0 && count( $audits ) === $failed ) {
-				Notice_Service::enqueue(
-					'error',
-					__( 'Audit failed. Verify your PageSpeed API key in Settings and try again.', 'leastudios-siteaudit' )
-				);
-			} elseif ( $failed > 0 ) {
-				Notice_Service::enqueue(
-					'error',
-					__( 'Audit completed with errors. One strategy failed; see audit history.', 'leastudios-siteaudit' )
-				);
-			} else {
-				Notice_Service::enqueue( 'success', __( 'Audit completed.', 'leastudios-siteaudit' ) );
-			}
-		} catch ( Validation_Exception $e ) {
-			Notice_Service::enqueue( 'error', $e->getMessage() );
+		if ( $this->enqueuer->has_pending( Tick_Dispatcher::RUN_AUDIT_HOOK, [ $id ] ) ) {
+			Notice_Service::enqueue(
+				'success',
+				__( 'Audit already queued — refresh in a moment to see results.', 'leastudios-siteaudit' )
+			);
+		} else {
+			$this->enqueuer->enqueue_async( Tick_Dispatcher::RUN_AUDIT_HOOK, [ $id ] );
+			Notice_Service::enqueue(
+				'success',
+				__( 'Audit queued — refresh in a moment to see results.', 'leastudios-siteaudit' )
+			);
 		}
 
 		wp_safe_redirect( $this->list_url() );

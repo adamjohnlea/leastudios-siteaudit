@@ -4,9 +4,9 @@
  *
  * Mirrors the Project_Controller_Test pattern across all five admin-post
  * handlers (create, update, delete, bulk-import, run-audit) plus the
- * capability-denial path. The run-audit case stubs Audit_Service through
- * its interface so the test exercises the controller's notice / redirect
- * logic without making a real PageSpeed call.
+ * capability-denial path. The run-audit case stubs the action enqueuer
+ * through its interface so the test exercises the controller's notice /
+ * redirect / dedup logic without touching Action Scheduler's tables.
  *
  * @package LEAStudios\SiteAudit\Tests
  */
@@ -16,12 +16,9 @@ declare(strict_types=1);
 namespace LEAStudios\SiteAudit\Tests\Integration\Admin;
 
 use LEAStudios\SiteAudit\Activation;
-use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Audit_Service_Interface;
-use LEAStudios\SiteAudit\Modules\Audit\Domain\Models\Audit;
-use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Accessibility_Score;
-use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Audit_Status;
-use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Run_Strategy;
 use LEAStudios\SiteAudit\Modules\Audit\Infrastructure\Repositories\Wpdb_Audit_Repository;
+use LEAStudios\SiteAudit\Modules\Scheduler\Application\Services\Action_Enqueuer_Interface;
+use LEAStudios\SiteAudit\Modules\Scheduler\Application\Services\Tick_Dispatcher;
 use LEAStudios\SiteAudit\Modules\Url\Admin\Url_Controller;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Bulk_Import_Service;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Project_Service;
@@ -37,7 +34,7 @@ final class Url_Controller_Test extends TestCase {
 
 	private Wpdb_Url_Repository $url_repository;
 
-	private Audit_Service_Interface&MockObject $audit_service;
+	private Action_Enqueuer_Interface&MockObject $enqueuer;
 
 	private string $captured_redirect = '';
 
@@ -53,13 +50,13 @@ final class Url_Controller_Test extends TestCase {
 		$project_service     = new Project_Service( new Wpdb_Project_Repository() );
 		$bulk_import_service = new Bulk_Import_Service( $this->url_repository );
 
-		$this->audit_service = $this->createMock( Audit_Service_Interface::class );
+		$this->enqueuer = $this->createMock( Action_Enqueuer_Interface::class );
 
 		$this->controller = new Url_Controller(
 			$url_service,
 			$project_service,
 			$bulk_import_service,
-			$this->audit_service,
+			$this->enqueuer,
 			$audit_repository
 		);
 
@@ -229,7 +226,7 @@ final class Url_Controller_Test extends TestCase {
 		$this->assertNotNull( $this->url_repository->find_by_url( 'https://two.test' ) );
 	}
 
-	public function test_handle_run_audit_calls_service_and_enqueues_success_notice(): void {
+	public function test_handle_run_audit_enqueues_async_action_and_shows_queued_notice(): void {
 		$created = ( new Url_Service( $this->url_repository ) )->create(
 			'https://example.com',
 			'Auditable',
@@ -241,12 +238,11 @@ final class Url_Controller_Test extends TestCase {
 			null
 		);
 
-		$completed_audit = $this->fake_audit( (int) $created->id(), Audit_Status::COMPLETED );
-		$this->audit_service
+		$this->enqueuer->method( 'has_pending' )->willReturn( false );
+		$this->enqueuer
 			->expects( $this->once() )
-			->method( 'run_audit' )
-			->with( (int) $created->id() )
-			->willReturn( [ $completed_audit ] );
+			->method( 'enqueue_async' )
+			->with( Tick_Dispatcher::RUN_AUDIT_HOOK, [ (int) $created->id() ] );
 
 		$nonce = wp_create_nonce( 'leastudios_siteaudit_run_audit' );
 
@@ -267,12 +263,13 @@ final class Url_Controller_Test extends TestCase {
 		$notice  = get_transient( 'leastudios_siteaudit_notice_' . $user_id );
 		$this->assertIsArray( $notice );
 		$this->assertSame( 'success', $notice['type'] );
+		$this->assertStringContainsString( 'queued', $notice['message'] );
 	}
 
-	public function test_handle_run_audit_surfaces_settings_hint_when_all_strategies_fail(): void {
+	public function test_handle_run_audit_skips_enqueue_when_already_pending(): void {
 		$created = ( new Url_Service( $this->url_repository ) )->create(
 			'https://example.com',
-			'Failing',
+			'Already-queued',
 			'weekly',
 			null,
 			'desktop',
@@ -281,10 +278,8 @@ final class Url_Controller_Test extends TestCase {
 			null
 		);
 
-		$failed_audit = $this->fake_audit( (int) $created->id(), Audit_Status::FAILED );
-		$this->audit_service
-			->method( 'run_audit' )
-			->willReturn( [ $failed_audit ] );
+		$this->enqueuer->method( 'has_pending' )->willReturn( true );
+		$this->enqueuer->expects( $this->never() )->method( 'enqueue_async' );
 
 		$nonce = wp_create_nonce( 'leastudios_siteaudit_run_audit' );
 
@@ -303,12 +298,12 @@ final class Url_Controller_Test extends TestCase {
 		$user_id = get_current_user_id();
 		$notice  = get_transient( 'leastudios_siteaudit_notice_' . $user_id );
 		$this->assertIsArray( $notice );
-		$this->assertSame( 'error', $notice['type'] );
-		$this->assertStringContainsString( 'API key', $notice['message'] );
+		$this->assertSame( 'success', $notice['type'] );
+		$this->assertStringContainsString( 'already queued', $notice['message'] );
 	}
 
-	public function test_handle_run_audit_with_invalid_id_enqueues_error_and_does_not_call_service(): void {
-		$this->audit_service->expects( $this->never() )->method( 'run_audit' );
+	public function test_handle_run_audit_with_invalid_id_enqueues_error_and_does_not_call_enqueuer(): void {
+		$this->enqueuer->expects( $this->never() )->method( 'enqueue_async' );
 
 		$nonce = wp_create_nonce( 'leastudios_siteaudit_run_audit' );
 
@@ -350,22 +345,5 @@ final class Url_Controller_Test extends TestCase {
 
 		$this->expectException( \WPDieException::class );
 		$this->controller->handle_run_audit();
-	}
-
-	private function fake_audit( int $url_id, Audit_Status $status ): Audit {
-		$now = new \DateTimeImmutable();
-
-		return new Audit(
-			1,
-			$url_id,
-			new Accessibility_Score( 85 ),
-			$status,
-			Run_Strategy::DESKTOP,
-			$now,
-			null,
-			null,
-			0,
-			$now
-		);
 	}
 }
