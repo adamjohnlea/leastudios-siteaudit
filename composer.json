@@ -1,0 +1,44 @@
+{
+    "name": "leastudios/leastudios-siteaudit",
+    "description": "Accessibility monitoring dashboard for WordPress, powered by the Google PageSpeed Insights API.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.1",
+        "dompdf/dompdf": "^3.1"
+    },
+    "require-dev": {
+        "php-stubs/wordpress-stubs": "^6.7",
+        "phpcompatibility/phpcompatibility-wp": "*",
+        "phpcsstandards/phpcsutils": "^1.0",
+        "phpstan/extension-installer": "^1.4",
+        "phpstan/phpstan": "^2.0",
+        "phpunit/phpunit": "^9.6",
+        "squizlabs/php_codesniffer": "^3.10",
+        "szepeviktor/phpstan-wordpress": "^2.0",
+        "wp-coding-standards/wpcs": "^3.1",
+        "yoast/phpunit-polyfills": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "LEAStudios\\SiteAudit\\": "src/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "phpstan/extension-installer": true
+        },
+        "sort-packages": true
+    },
+    "scripts": {
+        "phpcs": "phpcs",
+        "phpcbf": "phpcbf",
+        "phpstan": "phpstan analyse --memory-limit=2G",
+        "lint": [
+            "@phpcs",
+            "@phpstan"
+        ],
+        "test": "phpunit"
+    }
+}
