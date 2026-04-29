@@ -15,18 +15,19 @@ use LEAStudios\SiteAudit\Activation;
 use LEAStudios\SiteAudit\Capabilities;
 
 /**
- * Top-level "LEA Studios Site Audit" admin menu plus its Settings sub-page.
+ * Settings sub-page for the "LEA Studios Site Audit" admin menu.
  *
- * Phase 1 ships only the Settings page (PageSpeed API key, rate limit, retry
- * count, default frequency, default strategy). The dashboard / projects / urls
- * sub-pages are added in subsequent phases.
+ * The top-level menu (and its Dashboard landing page) is registered by
+ * `Dashboard_Controller`. This class owns only the Settings submenu and its
+ * fields (PageSpeed API key, rate limit, retry count, default frequency,
+ * default strategy).
  */
 final class Settings_Page {
 
 	private const OPTION_GROUP = 'leastudios_siteaudit_settings';
 	public const OPTION_NAME   = 'leastudios_siteaudit_options';
-	private const PAGE_SLUG    = 'leastudios-siteaudit-settings';
-	private const MENU_SLUG    = 'leastudios-siteaudit';
+	public const PAGE_SLUG     = 'leastudios-siteaudit-settings';
+	public const PARENT_SLUG   = 'leastudios-siteaudit';
 
 	/**
 	 * Register hooks.
@@ -34,28 +35,28 @@ final class Settings_Page {
 	 * @return void
 	 */
 	public function init(): void {
-		add_action( 'admin_menu', [ $this, 'register_menu' ] );
+		// Priority 11 so this runs AFTER Dashboard_Controller's `add_menu_page`
+		// has populated $admin_page_hooks for our parent slug. Without this,
+		// add_submenu_page registers the callback under page_type "admin"
+		// while menu-header.php later recomputes it as "site-audit_page_..."
+		// and emits a bare-slug href, which 404s.
+		add_action( 'admin_menu', [ $this, 'register_menu' ], 11 );
 		add_action( 'admin_init', [ $this, 'register_settings' ] );
 	}
 
 	/**
-	 * Register the top-level menu and the Settings sub-page.
+	 * Register the Settings sub-page under the parent menu.
+	 *
+	 * Submenu registration runs at the default priority because the parent
+	 * menu is registered by `Dashboard_Controller` at the same priority;
+	 * `add_submenu_page` only requires the parent to exist by the time the
+	 * `admin_menu` action completes, not before this callback fires.
 	 *
 	 * @return void
 	 */
 	public function register_menu(): void {
-		add_menu_page(
-			__( 'LEA Studios Site Audit', 'leastudios-siteaudit' ),
-			__( 'Site Audit', 'leastudios-siteaudit' ),
-			Capabilities::VIEW,
-			self::MENU_SLUG,
-			[ $this, 'render_placeholder' ],
-			'dashicons-universal-access-alt',
-			80
-		);
-
 		add_submenu_page(
-			self::MENU_SLUG,
+			self::PARENT_SLUG,
 			__( 'Site Audit Settings', 'leastudios-siteaudit' ),
 			__( 'Settings', 'leastudios-siteaudit' ),
 			Capabilities::MANAGE,
@@ -309,24 +310,6 @@ final class Settings_Page {
 		echo '</div>';
 	}
 
-	/**
-	 * Render the placeholder dashboard until Phase 4 ships the real one.
-	 *
-	 * @return void
-	 */
-	public function render_placeholder(): void {
-		if ( ! current_user_can( Capabilities::VIEW ) ) {
-			return;
-		}
-
-		echo '<div class="wrap">';
-		printf( '<h1>%s</h1>', esc_html__( 'LEA Studios Site Audit', 'leastudios-siteaudit' ) );
-		printf(
-			'<p>%s</p>',
-			esc_html__( 'The dashboard ships in a later phase. For now, configure your PageSpeed API key under Settings.', 'leastudios-siteaudit' )
-		);
-		echo '</div>';
-	}
 
 	/**
 	 * Read a single value from the stored options array, falling back to defaults.

@@ -15,6 +15,7 @@ use LEAStudios\SiteAudit\Admin\Settings_Page;
 use LEAStudios\SiteAudit\Database\Migration;
 use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Audit_Service;
 use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Comparison_Service;
+use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Trend_Calculator;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Audit_Comparison_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Audit_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Issue_Repository_Interface;
@@ -24,6 +25,8 @@ use LEAStudios\SiteAudit\Modules\Audit\Infrastructure\RateLimiting\Retry_Strateg
 use LEAStudios\SiteAudit\Modules\Audit\Infrastructure\Repositories\Wpdb_Audit_Comparison_Repository;
 use LEAStudios\SiteAudit\Modules\Audit\Infrastructure\Repositories\Wpdb_Audit_Repository;
 use LEAStudios\SiteAudit\Modules\Audit\Infrastructure\Repositories\Wpdb_Issue_Repository;
+use LEAStudios\SiteAudit\Modules\Dashboard\Admin\Dashboard_Controller;
+use LEAStudios\SiteAudit\Modules\Dashboard\Application\Services\Dashboard_Statistics;
 use LEAStudios\SiteAudit\Modules\Url\Admin\Project_Controller;
 use LEAStudios\SiteAudit\Modules\Url\Admin\Url_Controller;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Bulk_Import_Service;
@@ -90,6 +93,15 @@ final class Plugin {
 			$issue_repository,
 			$comparison_repository
 		);
+
+		( new Dashboard_Controller(
+			$project_repository,
+			$url_repository,
+			$audit_repository,
+			$issue_repository,
+			new Dashboard_Statistics(),
+			new Trend_Calculator()
+		) )->init();
 
 		( new Project_Controller( $project_service ) )->init();
 		( new Url_Controller(

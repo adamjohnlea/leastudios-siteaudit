@@ -1,0 +1,175 @@
+/* LEA Studios Site Audit — dashboard styles. Loaded only on plugin pages. */
+
+.lsa-breadcrumb {
+	color: #50575e;
+	font-size: 13px;
+	margin: 0 0 8px;
+}
+
+.lsa-breadcrumb a {
+	text-decoration: none;
+}
+
+.lsa-breadcrumb span {
+	margin: 0 4px;
+}
+
+/* Card grid */
+
+.lsa-card-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 16px;
+	margin-top: 16px;
+}
+
+.lsa-card {
+	display: block;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	padding: 16px 20px;
+	text-decoration: none;
+	color: inherit;
+	transition: box-shadow 0.15s ease;
+}
+
+.lsa-card:hover,
+.lsa-card:focus {
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+	color: inherit;
+}
+
+.lsa-card--dashed {
+	border-style: dashed;
+}
+
+.lsa-card__title {
+	margin: 0 0 4px;
+	font-size: 16px;
+	color: #1d2327;
+}
+
+.lsa-card__desc {
+	margin: 0 0 12px;
+	color: #50575e;
+	font-size: 13px;
+	min-height: 1em;
+}
+
+.lsa-card__stats {
+	display: flex;
+	gap: 16px;
+}
+
+/* Stat tiles */
+
+.lsa-stat-row {
+	display: flex;
+	gap: 24px;
+	flex-wrap: wrap;
+	margin: 16px 0 24px;
+	padding: 16px 20px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+}
+
+.lsa-stat {
+	min-width: 80px;
+}
+
+.lsa-stat__value {
+	font-size: 24px;
+	font-weight: 600;
+	line-height: 1.2;
+	color: #1d2327;
+}
+
+.lsa-stat__label {
+	font-size: 12px;
+	color: #50575e;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+/* Score colors */
+
+.lsa-score-excellent { color: #1e7e34; }
+.lsa-score-good      { color: #75a142; }
+.lsa-score-needs-work { color: #d99100; }
+.lsa-score-poor      { color: #b32d2e; }
+.lsa-score-none      { color: #6c757d; }
+
+.lsa-trend-up   { color: #1e7e34; }
+.lsa-trend-down { color: #b32d2e; }
+.lsa-trend-flat { color: #50575e; }
+
+/* Score badges (inline pills used in tables) */
+
+.lsa-score-badge {
+	display: inline-block;
+	min-width: 36px;
+	padding: 2px 8px;
+	border-radius: 10px;
+	font-weight: 600;
+	text-align: center;
+	background: #f0f0f1;
+}
+
+.lsa-score-badge.lsa-score-excellent  { background: #e2f4e3; color: #1e7e34; }
+.lsa-score-badge.lsa-score-good       { background: #f1f7e3; color: #5d7e2c; }
+.lsa-score-badge.lsa-score-needs-work { background: #fcf2d9; color: #8a5b00; }
+.lsa-score-badge.lsa-score-poor       { background: #fae0e0; color: #8b1e1f; }
+
+/* Issue tables */
+
+.lsa-issues {
+	margin-top: 12px;
+}
+
+.lsa-issue-group {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	margin-bottom: 12px;
+	padding: 8px 12px;
+}
+
+.lsa-issue-group > summary {
+	cursor: pointer;
+	padding: 4px 0;
+	font-weight: 500;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.lsa-issue-group__count {
+	color: #50575e;
+	font-size: 13px;
+}
+
+.lsa-issue-group table {
+	margin-top: 8px;
+}
+
+.lsa-issue-desc {
+	color: #50575e;
+	font-size: 13px;
+}
+
+.lsa-severity-badge {
+	display: inline-block;
+	padding: 2px 10px;
+	border-radius: 10px;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.lsa-severity-critical { background: #fae0e0; color: #8b1e1f; }
+.lsa-severity-serious  { background: #fcf2d9; color: #8a5b00; }
+.lsa-severity-moderate { background: #e7f3ff; color: #1d4f7a; }
+.lsa-severity-minor    { background: #f0f0f1; color: #3c434a; }
