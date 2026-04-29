@@ -19,7 +19,7 @@ This plan describes a 1:1 functional port of that application to a self-containe
 | Templating | **Pure PHP templates** in `templates/` | Zero extra deps, idiomatic for WP. Twig views get rewritten as PHP partials. |
 | PDF generation | **Bundle Dompdf** via Composer (`dompdf/dompdf ^3.1`) | Same library currently in use; full email-attached PDF reports retained. |
 | Permissions | **Custom capabilities** `manage_beacon_audit` (write) + `view_beacon_audit` (read) added to Administrator (both) and Editor (view only) on activation | Site owners can reassign via any role-management plugin without us creating new roles. |
-| Cron | **WP-Cron** via `wp_schedule_event('hourly', 'beacon_audit_tick')`, with documented system-cron fallback | Standard WP pattern; reliable when documented. |
+| Cron | **Action Scheduler** (WooCommerce's persistent async queue, bundled via Composer) drives the hourly tick AND every individual audit run, including manual "Run audit now". | Avoids tying up FPM workers on synchronous PageSpeed calls (~30–60s each). Persistent queue, automatic retries, built-in dashboard. Supersedes the original WP-Cron plan. |
 | Database | **Custom MySQL tables** via `$wpdb` and `dbDelta()`, prefixed `{$wpdb->prefix}beacon_*` | Native to WP; backups, multisite, and migrations work out of the box. |
 | Auth | **WordPress users**; drop the custom `users` table and `Auth` module entirely | `wp_get_current_user()`, nonces, and capabilities replace sessions/CSRF/roles. |
 | Email | **`wp_mail()`** | Site owners pick their delivery (built-in PHP mail, WP Mail SMTP, AWS SES plugin, etc.). No SDK shipped. |
@@ -170,10 +170,13 @@ CSV/PDF downloads stream from `admin-post.php` actions with appropriate `Content
 - All controllers → WP admin-page render callbacks + `admin_post_*` action handlers.
 - `AuthService`, custom user CRUD, login/logout, CSRF token logic → **deleted**. Replaced by WP nonces + capability checks.
 
-**Cron port:**
-- `cron/run-scheduled-audits.php` becomes `WP/Cron::tick()`, hooked to the custom `beacon_audit_tick` action that fires hourly via `wp_schedule_event`.
-- The dispatcher logic (find URLs whose `last_audited_at + frequency` has elapsed, call `AuditService::runAudit()` for each strategy, then trigger `AuditReportNotifier` once at the end) ports as-is from `ScheduledAuditRunner`.
-- README documents disabling WP-Cron (`define('DISABLE_WP_CRON', true);`) and adding `* * * * * curl https://site.com/wp-cron.php?doing_wp_cron` for reliability on low-traffic sites.
+**Cron / async port — Action Scheduler:**
+- Bundle Action Scheduler via Composer (`woocommerce/action-scheduler`) and load it from the plugin bootstrap. Registers its own hidden admin pages (`Tools → Scheduled Actions`) for visibility into the queue.
+- Hourly tick: `as_schedule_recurring_action( time(), HOUR_IN_SECONDS, 'leastudios_siteaudit_tick' )` registered on activation; `Cron::tick()` (the dispatcher) becomes the action handler.
+- Per-URL audits: `Cron::tick()` enqueues one `as_enqueue_async_action( 'leastudios_siteaudit_run_audit', [ $url_id ] )` per due URL instead of calling `Audit_Service::run_audit()` synchronously. Each enqueued action runs in its own background request, so one slow PageSpeed call cannot block the tick or other audits.
+- Manual "Run audit now": same pattern. The admin-post handler enqueues `leastudios_siteaudit_run_audit` and redirects immediately with an "Audit queued" notice; the user refreshes to see the result.
+- Post-tick notifications: a separate `leastudios_siteaudit_post_tick` action is enqueued at the end of `Cron::tick()` so `Audit_Report_Notifier` runs only once after all URL audits in that batch complete.
+- README documents disabling WP-Cron (`define('DISABLE_WP_CRON', true);`) and adding `* * * * * curl https://site.com/wp-cron.php?doing_wp_cron` for reliability on low-traffic sites — Action Scheduler still runs its queue via WP-Cron's loopback by default.
 
 ---
 
@@ -202,7 +205,7 @@ Build in this order. Each phase ends with a working, testable slice — do not s
 2. **URL + Project module** — Domain models, VOs, repositories, services, admin pages, bulk import. Verify: CRUD works in admin, bulk import handles valid/invalid rows correctly.
 3. **Audit module (core)** — Port `PageSpeedApiClient` with `wp_remote_get`, `RetryStrategy`, `AuditService`, `ComparisonService`, `TrendCalculator`. Add a "Run audit now" button on URL detail. Verify: real PageSpeed call against a live URL returns a score, audit + issues + comparison persist.
 4. **Dashboard views** — Port `DashboardStatistics` and the dashboard/project/URL-detail templates. Includes desktop/mobile tabs (recent commit `ed3cb3a`) and per-URL inline scoring (`44c4980`). Verify: dashboard shows realistic data after a few manual audits.
-5. **Cron** — `WP/Cron::tick()`, `wp_schedule_event` registration, system-cron docs. Verify: trigger via `wp cron event run beacon_audit_tick` and confirm due URLs get audited.
+5. **Async / scheduling (Action Scheduler)** — bundle Action Scheduler via Composer; register the recurring `leastudios_siteaudit_tick` action; port the dispatcher (`Cron::tick()`) so it enqueues a per-URL `leastudios_siteaudit_run_audit` async action instead of running audits inline; convert "Run audit now" to also enqueue the same action and redirect immediately. Verify: queue a manual run, observe the `IN_PROGRESS` row appear seconds later, then `COMPLETED`, without the click handler blocking. Trigger the recurring tick via `wp action-scheduler run` and confirm due URLs get audited.
 6. **Reporting** — `CsvExportService`, `PdfReportService` with Dompdf, export controllers. Verify: CSV downloads parse cleanly; PDF renders with score, trend, issue breakdown.
 7. **Notifications** — `WpMailService`, `AlertNotifier` (threshold-driven), `AuditReportNotifier` (post-cron), email subscription toggle on project page. Verify: trigger an alert by setting an aggressive threshold; check email is delivered with the rendered template.
 8. **Polish** — Activation notices when API key missing, capability gating audit, accessibility pass on the admin UI itself, `readme.txt` for WP.org metadata.
