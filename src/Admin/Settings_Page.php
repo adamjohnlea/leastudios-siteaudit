@@ -24,7 +24,7 @@ use LEAStudios\SiteAudit\Capabilities;
 final class Settings_Page {
 
 	private const OPTION_GROUP = 'leastudios_siteaudit_settings';
-	private const OPTION_NAME  = 'leastudios_siteaudit_options';
+	public const OPTION_NAME   = 'leastudios_siteaudit_options';
 	private const PAGE_SLUG    = 'leastudios-siteaudit-settings';
 	private const MENU_SLUG    = 'leastudios-siteaudit';
 

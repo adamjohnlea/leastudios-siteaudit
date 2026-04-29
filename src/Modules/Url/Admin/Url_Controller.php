@@ -13,6 +13,9 @@ defined( 'ABSPATH' ) || exit;
 
 use LEAStudios\SiteAudit\Admin\Notice_Service;
 use LEAStudios\SiteAudit\Capabilities;
+use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Audit_Service;
+use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Audit_Repository_Interface;
+use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Audit_Status;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Bulk_Import_Service;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Project_Service;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Url_Service;
@@ -38,6 +41,7 @@ final class Url_Controller {
 	private const ACTION_UPDATE      = 'leastudios_siteaudit_update_url';
 	private const ACTION_DELETE      = 'leastudios_siteaudit_delete_url';
 	private const ACTION_BULK_IMPORT = 'leastudios_siteaudit_bulk_import_urls';
+	private const ACTION_RUN_AUDIT   = 'leastudios_siteaudit_run_audit';
 
 	private const PER_PAGE                = 20;
 	private const BULK_RESULT_TTL_SECONDS = 300;
@@ -64,20 +68,40 @@ final class Url_Controller {
 	private Bulk_Import_Service $bulk_import_service;
 
 	/**
+	 * Audit orchestration service.
+	 *
+	 * @var Audit_Service
+	 */
+	private Audit_Service $audit_service;
+
+	/**
+	 * Audit repository (read-only use here, for the URL list score column).
+	 *
+	 * @var Audit_Repository_Interface
+	 */
+	private Audit_Repository_Interface $audit_repository;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param Url_Service         $url_service         URL application service.
-	 * @param Project_Service     $project_service     Project application service.
-	 * @param Bulk_Import_Service $bulk_import_service Bulk import service.
+	 * @param Url_Service                $url_service         URL application service.
+	 * @param Project_Service            $project_service     Project application service.
+	 * @param Bulk_Import_Service        $bulk_import_service Bulk import service.
+	 * @param Audit_Service              $audit_service       Audit orchestration service.
+	 * @param Audit_Repository_Interface $audit_repository    Audit repository (for list score lookup).
 	 */
 	public function __construct(
 		Url_Service $url_service,
 		Project_Service $project_service,
-		Bulk_Import_Service $bulk_import_service
+		Bulk_Import_Service $bulk_import_service,
+		Audit_Service $audit_service,
+		Audit_Repository_Interface $audit_repository
 	) {
 		$this->url_service         = $url_service;
 		$this->project_service     = $project_service;
 		$this->bulk_import_service = $bulk_import_service;
+		$this->audit_service       = $audit_service;
+		$this->audit_repository    = $audit_repository;
 	}
 
 	/**
@@ -91,6 +115,7 @@ final class Url_Controller {
 		add_action( 'admin_post_' . self::ACTION_UPDATE, [ $this, 'handle_update' ] );
 		add_action( 'admin_post_' . self::ACTION_DELETE, [ $this, 'handle_delete' ] );
 		add_action( 'admin_post_' . self::ACTION_BULK_IMPORT, [ $this, 'handle_bulk_import' ] );
+		add_action( 'admin_post_' . self::ACTION_RUN_AUDIT, [ $this, 'handle_run_audit' ] );
 	}
 
 	/**
@@ -157,22 +182,36 @@ final class Url_Controller {
 		$projects     = $this->project_service->find_all();
 		$projects_map = $this->index_projects( $projects );
 
+		$url_ids = [];
+		foreach ( $urls as $url_for_id ) {
+			$id = $url_for_id->id();
+			if ( null !== $id ) {
+				$url_ids[] = $id;
+			}
+		}
+		$latest_scores = [] === $url_ids
+			? []
+			: $this->audit_repository->find_latest_scores_by_url_ids( $url_ids );
+
 		$this->include_template(
 			'urls/index.php',
 			[
-				'urls'            => $urls,
-				'projects_by_id'  => $projects_map,
-				'total'           => $total,
-				'page'            => $page,
-				'total_pages'     => $total_pages,
-				'per_page'        => self::PER_PAGE,
-				'search'          => $search,
-				'list_url'        => $this->list_url(),
-				'create_url'      => add_query_arg( 'action', 'create', $this->list_url() ),
-				'bulk_import_url' => add_query_arg( 'action', 'bulk-import', $this->list_url() ),
-				'edit_base_url'   => $this->list_url(),
-				'delete_url'      => admin_url( 'admin-post.php' ),
-				'delete_action'   => self::ACTION_DELETE,
+				'urls'             => $urls,
+				'projects_by_id'   => $projects_map,
+				'latest_scores'    => $latest_scores,
+				'total'            => $total,
+				'page'             => $page,
+				'total_pages'      => $total_pages,
+				'per_page'         => self::PER_PAGE,
+				'search'           => $search,
+				'list_url'         => $this->list_url(),
+				'create_url'       => add_query_arg( 'action', 'create', $this->list_url() ),
+				'bulk_import_url'  => add_query_arg( 'action', 'bulk-import', $this->list_url() ),
+				'edit_base_url'    => $this->list_url(),
+				'delete_url'       => admin_url( 'admin-post.php' ),
+				'delete_action'    => self::ACTION_DELETE,
+				'run_audit_url'    => admin_url( 'admin-post.php' ),
+				'run_audit_action' => self::ACTION_RUN_AUDIT,
 			]
 		);
 	}
@@ -204,14 +243,15 @@ final class Url_Controller {
 		$this->include_template(
 			'urls/form.php',
 			[
-				'url_model'     => $url,
-				'projects'      => $this->project_service->find_all(),
-				'frequencies'   => Audit_Frequency::cases(),
-				'strategies'    => Audit_Strategy::cases(),
-				'post_url'      => admin_url( 'admin-post.php' ),
-				'list_url'      => $this->list_url(),
-				'create_action' => self::ACTION_CREATE,
-				'update_action' => self::ACTION_UPDATE,
+				'url_model'        => $url,
+				'projects'         => $this->project_service->find_all(),
+				'frequencies'      => Audit_Frequency::cases(),
+				'strategies'       => Audit_Strategy::cases(),
+				'post_url'         => admin_url( 'admin-post.php' ),
+				'list_url'         => $this->list_url(),
+				'create_action'    => self::ACTION_CREATE,
+				'update_action'    => self::ACTION_UPDATE,
+				'run_audit_action' => self::ACTION_RUN_AUDIT,
 			]
 		);
 	}
@@ -456,6 +496,69 @@ final class Url_Controller {
 				$this->list_url()
 			)
 		);
+		exit;
+	}
+
+	/**
+	 * Handle POST: run a PageSpeed audit for one URL synchronously.
+	 *
+	 * Routes to {@see Audit_Service::run_audit()}, which inserts an in-progress
+	 * audit row, calls PageSpeed, persists score + issues, writes a comparison
+	 * row when a previous run exists, and stamps `urls.last_audited_at`.
+	 * Per-strategy failures are recorded as FAILED audit rows; we surface a
+	 * useful error notice that points the user toward Settings.
+	 *
+	 * @return void
+	 */
+	public function handle_run_audit(): void {
+		$this->guard_post( self::ACTION_RUN_AUDIT );
+
+		// PageSpeed calls take ~30s each; with audit_strategy=both that's two back-to-back,
+		// well past PHP's default max_execution_time. Lift the limit for this synchronous
+		// admin-post request only — the same mechanism wp-cron uses for long ticks.
+		if ( function_exists( 'wp_raise_memory_limit' ) ) {
+			wp_raise_memory_limit( 'admin' );
+		}
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- @ guards against environments where set_time_limit is disabled (safe_mode / disable_functions).
+		@set_time_limit( 0 );
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- guarded above by guard_post().
+		$id = isset( $_POST['id'] ) ? absint( wp_unslash( (string) $_POST['id'] ) ) : 0;
+
+		if ( $id <= 0 ) {
+			Notice_Service::enqueue( 'error', __( 'Invalid URL id.', 'leastudios-siteaudit' ) );
+			wp_safe_redirect( $this->list_url() );
+			exit;
+		}
+
+		try {
+			$audits = $this->audit_service->run_audit( $id );
+
+			$failed = 0;
+			foreach ( $audits as $audit ) {
+				if ( Audit_Status::FAILED === $audit->status() ) {
+					++$failed;
+				}
+			}
+
+			if ( count( $audits ) > 0 && count( $audits ) === $failed ) {
+				Notice_Service::enqueue(
+					'error',
+					__( 'Audit failed. Verify your PageSpeed API key in Settings and try again.', 'leastudios-siteaudit' )
+				);
+			} elseif ( $failed > 0 ) {
+				Notice_Service::enqueue(
+					'error',
+					__( 'Audit completed with errors. One strategy failed; see audit history.', 'leastudios-siteaudit' )
+				);
+			} else {
+				Notice_Service::enqueue( 'success', __( 'Audit completed.', 'leastudios-siteaudit' ) );
+			}
+		} catch ( Validation_Exception $e ) {
+			Notice_Service::enqueue( 'error', $e->getMessage() );
+		}
+
+		wp_safe_redirect( $this->list_url() );
 		exit;
 	}
 

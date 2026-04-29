@@ -6,6 +6,7 @@
  *
  * @var array<int, \LEAStudios\SiteAudit\Modules\Url\Domain\Models\Url> $urls
  * @var array<int, \LEAStudios\SiteAudit\Modules\Url\Domain\Models\Project> $projects_by_id
+ * @var array<int, array{desktop?: int, mobile?: int}> $latest_scores
  * @var int $total
  * @var int $page
  * @var int $total_pages
@@ -17,6 +18,8 @@
  * @var string $edit_base_url
  * @var string $delete_url
  * @var string $delete_action
+ * @var string $run_audit_url
+ * @var string $run_audit_action
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -50,6 +53,8 @@ defined( 'ABSPATH' ) || exit;
 					<th scope="col"><?php esc_html_e( 'Frequency', 'leastudios-siteaudit' ); ?></th>
 					<th scope="col"><?php esc_html_e( 'Strategy', 'leastudios-siteaudit' ); ?></th>
 					<th scope="col"><?php esc_html_e( 'Status', 'leastudios-siteaudit' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Desktop', 'leastudios-siteaudit' ); ?></th>
+					<th scope="col"><?php esc_html_e( 'Mobile', 'leastudios-siteaudit' ); ?></th>
 					<th scope="col"><?php esc_html_e( 'Last Audited', 'leastudios-siteaudit' ); ?></th>
 					<th scope="col"><?php esc_html_e( 'Actions', 'leastudios-siteaudit' ); ?></th>
 				</tr>
@@ -70,7 +75,10 @@ defined( 'ABSPATH' ) || exit;
 					if ( null !== $project_id && isset( $projects_by_id[ $project_id ] ) ) {
 						$project_label = esc_html( $projects_by_id[ $project_id ]->name()->value() );
 					}
-					$last_audited = $url_model->last_audited_at();
+					$last_audited  = $url_model->last_audited_at();
+					$row_scores    = $latest_scores[ $url_id ] ?? [];
+					$desktop_score = $row_scores['desktop'] ?? null;
+					$mobile_score  = $row_scores['mobile'] ?? null;
 					?>
 					<tr>
 						<td>
@@ -99,6 +107,12 @@ defined( 'ABSPATH' ) || exit;
 							<?php endif; ?>
 						</td>
 						<td>
+							<?php echo null === $desktop_score ? '&mdash;' : esc_html( (string) $desktop_score ); ?>
+						</td>
+						<td>
+							<?php echo null === $mobile_score ? '&mdash;' : esc_html( (string) $mobile_score ); ?>
+						</td>
+						<td>
 							<?php
 							if ( null !== $last_audited ) {
 								echo esc_html( mysql2date( get_option( 'date_format', 'Y-m-d' ), $last_audited->format( 'Y-m-d H:i:s' ) ) );
@@ -110,6 +124,12 @@ defined( 'ABSPATH' ) || exit;
 						<td>
 							<a href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'leastudios-siteaudit' ); ?></a>
 							<?php if ( current_user_can( \LEAStudios\SiteAudit\Capabilities::MANAGE ) ) : ?>
+								| <form method="post" action="<?php echo esc_url( $run_audit_url ); ?>" style="display:inline">
+									<?php wp_nonce_field( $run_audit_action ); ?>
+									<input type="hidden" name="action" value="<?php echo esc_attr( $run_audit_action ); ?>" />
+									<input type="hidden" name="id" value="<?php echo esc_attr( (string) $url_id ); ?>" />
+									<button type="submit" class="button-link"><?php esc_html_e( 'Run audit now', 'leastudios-siteaudit' ); ?></button>
+								</form>
 								| <form method="post" action="<?php echo esc_url( $delete_url ); ?>" style="display:inline" onsubmit="return confirm('<?php echo esc_js( __( 'Delete this URL? Audit history will be removed too.', 'leastudios-siteaudit' ) ); ?>');">
 									<?php wp_nonce_field( $delete_action ); ?>
 									<input type="hidden" name="action" value="<?php echo esc_attr( $delete_action ); ?>" />

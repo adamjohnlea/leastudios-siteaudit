@@ -12,6 +12,7 @@
  * @var string $list_url
  * @var string $create_action
  * @var string $update_action
+ * @var string $run_audit_action
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -192,4 +193,15 @@ $threshold_drop  = $is_edit ? $url_model->alert_threshold_drop() : null;
 			<a href="<?php echo esc_url( $list_url ); ?>" class="button"><?php esc_html_e( 'Cancel', 'leastudios-siteaudit' ); ?></a>
 		</p>
 	</form>
+
+	<?php if ( $is_edit ) : ?>
+		<form method="post" action="<?php echo esc_url( $post_url ); ?>">
+			<?php wp_nonce_field( $run_audit_action ); ?>
+			<input type="hidden" name="action" value="<?php echo esc_attr( $run_audit_action ); ?>" />
+			<input type="hidden" name="id" value="<?php echo esc_attr( (string) (int) $url_model->id() ); ?>" />
+			<p class="submit">
+				<button type="submit" class="button button-secondary"><?php esc_html_e( 'Run audit now', 'leastudios-siteaudit' ); ?></button>
+			</p>
+		</form>
+	<?php endif; ?>
 </div>
