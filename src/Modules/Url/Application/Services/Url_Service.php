@@ -216,6 +216,30 @@ final class Url_Service {
 	}
 
 	/**
+	 * Paginated list-with-search.
+	 *
+	 * @param int    $page     1-indexed page number.
+	 * @param int    $per_page Page size.
+	 * @param string $search   Substring matched against url and name.
+	 *
+	 * @return array<int, Url>
+	 */
+	public function find_paginated( int $page, int $per_page, string $search = '' ): array {
+		return $this->url_repository->find_paginated( $page, $per_page, $search );
+	}
+
+	/**
+	 * Count rows matching an optional search.
+	 *
+	 * @param string $search Substring matched against url and name.
+	 *
+	 * @return int
+	 */
+	public function count_for_search( string $search = '' ): int {
+		return $this->url_repository->count_for_search( $search );
+	}
+
+	/**
 	 * Coerce a string value to an `Audit_Strategy`.
 	 *
 	 * @param string $strategy Strategy enum value.
