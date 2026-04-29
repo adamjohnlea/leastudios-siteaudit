@@ -20,11 +20,12 @@ use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Issue_Severity;
 /**
  * Implements {@see Issue_Repository_Interface} on top of `$wpdb`.
  *
- * `save_many()` issues sequential inserts. We deliberately do not wrap them in
- * a transaction: WP_UnitTestCase already opens an outer transaction per test
- * and a nested `START TRANSACTION` would silently commit it on MySQL, breaking
- * test isolation. In production a partial mid-batch failure leaves fewer
- * issues than expected for one audit, which the next audit run overwrites.
+ * `save_many()` issues a single multi-value INSERT, which InnoDB makes
+ * atomic at the statement level — all rows commit together or none do.
+ * That preserves the original "no half-saved batches" guarantee without
+ * an explicit transaction, which would otherwise collide with the outer
+ * transaction WP_UnitTestCase opens per test (a nested `START TRANSACTION`
+ * silently commits the outer one on MySQL).
  */
 final class Wpdb_Issue_Repository implements Issue_Repository_Interface {
 
@@ -84,16 +85,70 @@ final class Wpdb_Issue_Repository implements Issue_Repository_Interface {
 	}
 
 	/**
-	 * Persist many issues sequentially.
+	 * Persist many issues atomically via a single multi-value INSERT.
+	 *
+	 * InnoDB statement atomicity guarantees that either every row in the batch
+	 * lands or none of them do, with no nested-transaction needed. Returned
+	 * `Issue` instances do **not** have ids assigned — InnoDB's default
+	 * `innodb_autoinc_lock_mode = 2` does not promise contiguous auto-increment
+	 * values for batch inserts, so back-filling ids would be unsound. The
+	 * production caller (`Audit_Service`) does not need the ids; downstream
+	 * reads use {@see find_by_audit_id()}.
 	 *
 	 * @param array<int, Issue> $issues Issues to insert.
 	 *
 	 * @return array<int, Issue>
 	 */
 	public function save_many( array $issues ): array {
-		foreach ( $issues as $issue ) {
-			$this->save( $issue );
+		if ( [] === $issues ) {
+			return [];
 		}
+
+		$row_placeholders = [];
+		$args             = [];
+
+		foreach ( $issues as $issue ) {
+			$title            = $issue->title();
+			$element_selector = $issue->element_selector();
+			$help_url         = $issue->help_url();
+
+			// Per-row placeholder layout: literal `NULL` is interpolated for null values,
+			// because $wpdb->prepare() coerces null to '' for %s and 0 for %d, which
+			// would silently flip nullable columns to empty strings.
+			$parts = [
+				'%d',                                       // audit_id.
+				'%s',                                       // severity.
+				'%s',                                       // category.
+				null === $title ? 'NULL' : '%s',            // title.
+				'%s',                                       // description.
+				null === $element_selector ? 'NULL' : '%s', // element_selector.
+				null === $help_url ? 'NULL' : '%s',         // help_url.
+				'%s',                                       // created_at.
+			];
+
+			$row_placeholders[] = '(' . implode( ', ', $parts ) . ')';
+
+			$args[] = $issue->audit_id();
+			$args[] = $issue->severity()->value;
+			$args[] = $issue->category()->value;
+			if ( null !== $title ) {
+				$args[] = $title;
+			}
+			$args[] = $issue->description();
+			if ( null !== $element_selector ) {
+				$args[] = $element_selector;
+			}
+			if ( null !== $help_url ) {
+				$args[] = $help_url;
+			}
+			$args[] = $issue->created_at()->format( 'Y-m-d H:i:s' );
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name and per-row placeholder shape are hard-coded; user values flow through prepare().
+		$sql = "INSERT INTO `{$this->table}` (audit_id, severity, category, title, description, element_selector, help_url, created_at) VALUES " . implode( ', ', $row_placeholders );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$this->wpdb->query( $this->wpdb->prepare( $sql, $args ) );
 
 		return $issues;
 	}

@@ -56,12 +56,54 @@ final class Wpdb_Issue_Repository_Test extends TestCase {
 		$saved = $this->repository->save_many( $issues );
 
 		$this->assertCount( 3, $saved );
-		foreach ( $saved as $issue ) {
-			$this->assertNotNull( $issue->id() );
-		}
 
 		$reloaded = $this->repository->find_by_audit_id( 9 );
 		$this->assertCount( 3, $reloaded );
+	}
+
+	public function test_save_many_preserves_nulls_for_optional_columns(): void {
+		$this->repository->save_many(
+			[
+				$this->new_issue( audit_id: 11, description: 'no extras' ),
+			]
+		);
+
+		$reloaded = $this->repository->find_by_audit_id( 11 );
+
+		$this->assertCount( 1, $reloaded );
+		$this->assertNull( $reloaded[0]->title() );
+		$this->assertNull( $reloaded[0]->element_selector() );
+		$this->assertNull( $reloaded[0]->help_url() );
+	}
+
+	public function test_save_many_round_trips_non_null_optional_columns(): void {
+		$this->repository->save_many(
+			[
+				new Issue(
+					null,
+					22,
+					Issue_Severity::CRITICAL,
+					Issue_Category::IMAGES,
+					'Missing alt attributes',
+					'img.hero',
+					'https://example.com/help',
+					new \DateTimeImmutable(),
+					'Image alt',
+				),
+			]
+		);
+
+		$reloaded = $this->repository->find_by_audit_id( 22 );
+
+		$this->assertCount( 1, $reloaded );
+		$this->assertSame( 'Image alt', $reloaded[0]->title() );
+		$this->assertSame( 'img.hero', $reloaded[0]->element_selector() );
+		$this->assertSame( 'https://example.com/help', $reloaded[0]->help_url() );
+		$this->assertSame( 'Missing alt attributes', $reloaded[0]->description() );
+	}
+
+	public function test_save_many_returns_empty_array_for_empty_input(): void {
+		$this->assertSame( [], $this->repository->save_many( [] ) );
 	}
 
 	public function test_find_by_audit_id_orders_by_severity_ascending(): void {
