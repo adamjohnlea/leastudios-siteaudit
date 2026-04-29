@@ -39,6 +39,39 @@ $page_title = null !== $project
 	</p>
 
 	<h1 class="wp-heading-inline"><?php echo esc_html( $page_title ); ?></h1>
+	<?php
+	$summary_id = null !== $project ? (int) $project->id() : 0;
+	$csv_url    = wp_nonce_url(
+		add_query_arg(
+			[
+				'action'     => \LEAStudios\SiteAudit\Modules\Reporting\Admin\Reporting_Controller::ACTION_EXPORT_SUMMARY,
+				'project_id' => $summary_id,
+			],
+			admin_url( 'admin-post.php' )
+		),
+		\LEAStudios\SiteAudit\Modules\Reporting\Admin\Reporting_Controller::ACTION_EXPORT_SUMMARY
+	);
+	?>
+	<a href="<?php echo esc_url( $csv_url ); ?>" class="page-title-action">
+		<?php esc_html_e( 'Download URL list (CSV)', 'leastudios-siteaudit' ); ?>
+	</a>
+	<?php if ( null !== $project ) : ?>
+		<?php
+		$pdf_url = wp_nonce_url(
+			add_query_arg(
+				[
+					'action'     => \LEAStudios\SiteAudit\Modules\Reporting\Admin\Reporting_Controller::ACTION_EXPORT_PDF,
+					'project_id' => (int) $project->id(),
+				],
+				admin_url( 'admin-post.php' )
+			),
+			\LEAStudios\SiteAudit\Modules\Reporting\Admin\Reporting_Controller::ACTION_EXPORT_PDF
+		);
+		?>
+		<a href="<?php echo esc_url( $pdf_url ); ?>" class="page-title-action">
+			<?php esc_html_e( 'Download report (PDF)', 'leastudios-siteaudit' ); ?>
+		</a>
+	<?php endif; ?>
 	<hr class="wp-header-end" />
 
 	<?php if ( null !== $project ) : ?>

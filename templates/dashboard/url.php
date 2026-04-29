@@ -79,6 +79,21 @@ $trend_arrow = match ( $trend->value ) {
 	</p>
 
 	<h1 class="wp-heading-inline"><?php echo esc_html( $display_name ); ?></h1>
+	<?php
+	$audits_csv_url = wp_nonce_url(
+		add_query_arg(
+			[
+				'action' => \LEAStudios\SiteAudit\Modules\Reporting\Admin\Reporting_Controller::ACTION_EXPORT_AUDITS,
+				'url_id' => (int) $url->id(),
+			],
+			admin_url( 'admin-post.php' )
+		),
+		\LEAStudios\SiteAudit\Modules\Reporting\Admin\Reporting_Controller::ACTION_EXPORT_AUDITS
+	);
+	?>
+	<a href="<?php echo esc_url( $audits_csv_url ); ?>" class="page-title-action">
+		<?php esc_html_e( 'Download audit history (CSV)', 'leastudios-siteaudit' ); ?>
+	</a>
 	<hr class="wp-header-end" />
 
 	<p class="description">

@@ -28,6 +28,10 @@ use LEAStudios\SiteAudit\Modules\Audit\Infrastructure\Repositories\Wpdb_Audit_Re
 use LEAStudios\SiteAudit\Modules\Audit\Infrastructure\Repositories\Wpdb_Issue_Repository;
 use LEAStudios\SiteAudit\Modules\Dashboard\Admin\Dashboard_Controller;
 use LEAStudios\SiteAudit\Modules\Dashboard\Application\Services\Dashboard_Statistics;
+use LEAStudios\SiteAudit\Modules\Reporting\Admin\Reporting_Controller;
+use LEAStudios\SiteAudit\Modules\Reporting\Application\Services\Csv_Export_Service;
+use LEAStudios\SiteAudit\Modules\Reporting\Application\Services\Pdf_Report_Data_Collector;
+use LEAStudios\SiteAudit\Modules\Reporting\Application\Services\Pdf_Report_Service;
 use LEAStudios\SiteAudit\Modules\Scheduler\Application\Services\Action_Enqueuer_Interface;
 use LEAStudios\SiteAudit\Modules\Scheduler\Application\Services\Audit_Worker;
 use LEAStudios\SiteAudit\Modules\Scheduler\Application\Services\Frequency_Interval;
@@ -188,12 +192,14 @@ final class Plugin {
 		$url_service         = new Url_Service( $url_repository );
 		$bulk_import_service = new Bulk_Import_Service( $url_repository );
 
+		$statistics = new Dashboard_Statistics();
+
 		( new Dashboard_Controller(
 			$project_repository,
 			$url_repository,
 			$audit_repository,
 			$issue_repository,
-			new Dashboard_Statistics(),
+			$statistics,
 			new Trend_Calculator()
 		) )->init();
 
@@ -204,6 +210,21 @@ final class Plugin {
 			$bulk_import_service,
 			$enqueuer,
 			$audit_repository
+		) )->init();
+
+		( new Reporting_Controller(
+			$project_repository,
+			$url_repository,
+			$audit_repository,
+			$statistics,
+			new Csv_Export_Service(),
+			new Pdf_Report_Data_Collector(
+				$url_repository,
+				$audit_repository,
+				$issue_repository,
+				$statistics
+			),
+			new Pdf_Report_Service()
 		) )->init();
 	}
 
