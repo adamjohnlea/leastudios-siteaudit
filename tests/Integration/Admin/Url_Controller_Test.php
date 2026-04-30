@@ -25,6 +25,7 @@ use LEAStudios\SiteAudit\Modules\Url\Application\Services\Project_Service;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Url_Service;
 use LEAStudios\SiteAudit\Modules\Url\Infrastructure\Repositories\Wpdb_Project_Repository;
 use LEAStudios\SiteAudit\Modules\Url\Infrastructure\Repositories\Wpdb_Url_Repository;
+use LEAStudios\SiteAudit\Shared\Template_Renderer;
 use LEAStudios\Tests\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -57,7 +58,8 @@ final class Url_Controller_Test extends TestCase {
 			$project_service,
 			$bulk_import_service,
 			$this->enqueuer,
-			$audit_repository
+			$audit_repository,
+			new Template_Renderer( LEASTUDIOS_SITEAUDIT_DIR . 'templates' )
 		);
 
 		$admin_id = self::factory()->user->create( [ 'role' => 'administrator' ] );

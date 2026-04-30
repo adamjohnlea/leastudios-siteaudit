@@ -53,6 +53,7 @@ use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Project_Repository_Inte
 use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Url_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Url\Infrastructure\Repositories\Wpdb_Project_Repository;
 use LEAStudios\SiteAudit\Modules\Url\Infrastructure\Repositories\Wpdb_Url_Repository;
+use LEAStudios\SiteAudit\Shared\Template_Renderer;
 
 /**
  * Wires all plugin components together.
@@ -235,13 +236,15 @@ final class Plugin {
 		Pdf_Report_Service $pdf_report_service,
 		Wp_Mail_Service $email_service
 	): void {
-		$alert_notifier  = new Alert_Notifier( $subscription_repository, $email_service );
-		$report_notifier = new Audit_Report_Notifier(
+		$template_renderer = new Template_Renderer( LEASTUDIOS_SITEAUDIT_DIR . 'templates' );
+		$alert_notifier    = new Alert_Notifier( $subscription_repository, $email_service, $template_renderer );
+		$report_notifier   = new Audit_Report_Notifier(
 			$project_repository,
 			$subscription_repository,
 			$pdf_data_collector,
 			$pdf_report_service,
-			$email_service
+			$email_service,
+			$template_renderer
 		);
 
 		add_action(
@@ -299,6 +302,7 @@ final class Plugin {
 		$project_service     = new Project_Service( $project_repository );
 		$url_service         = new Url_Service( $url_repository );
 		$bulk_import_service = new Bulk_Import_Service( $url_repository );
+		$template_renderer   = new Template_Renderer( LEASTUDIOS_SITEAUDIT_DIR . 'templates' );
 
 		( new Dashboard_Controller(
 			$project_repository,
@@ -307,16 +311,18 @@ final class Plugin {
 			$issue_repository,
 			$statistics,
 			new Trend_Calculator(),
-			$subscription_repository
+			$subscription_repository,
+			$template_renderer
 		) )->init();
 
-		( new Project_Controller( $project_service ) )->init();
+		( new Project_Controller( $project_service, $template_renderer ) )->init();
 		( new Url_Controller(
 			$url_service,
 			$project_service,
 			$bulk_import_service,
 			$enqueuer,
-			$audit_repository
+			$audit_repository,
+			$template_renderer
 		) )->init();
 
 		( new Reporting_Controller(

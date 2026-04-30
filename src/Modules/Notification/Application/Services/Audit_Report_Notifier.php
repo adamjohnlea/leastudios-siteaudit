@@ -18,6 +18,7 @@ use LEAStudios\SiteAudit\Modules\Reporting\Application\Services\Pdf_Report_Data_
 use LEAStudios\SiteAudit\Modules\Reporting\Application\Services\Pdf_Report_Service_Interface;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Models\Url;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Project_Repository_Interface;
+use LEAStudios\SiteAudit\Shared\Template_Renderer;
 
 /**
  * Sends the freshly-rendered project PDF to every subscriber after each
@@ -66,6 +67,13 @@ final class Audit_Report_Notifier {
 	private Email_Service_Interface $email_service;
 
 	/**
+	 * Template renderer.
+	 *
+	 * @var Template_Renderer
+	 */
+	private Template_Renderer $template_renderer;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Project_Repository_Interface            $project_repository      Project repo.
@@ -73,19 +81,22 @@ final class Audit_Report_Notifier {
 	 * @param Pdf_Report_Data_Collector_Interface     $data_collector          PDF data collector.
 	 * @param Pdf_Report_Service_Interface            $pdf_service             PDF service.
 	 * @param Email_Service_Interface                 $email_service           Mail transport.
+	 * @param Template_Renderer                       $template_renderer       Renders the report body partial.
 	 */
 	public function __construct(
 		Project_Repository_Interface $project_repository,
 		Email_Subscription_Repository_Interface $subscription_repository,
 		Pdf_Report_Data_Collector_Interface $data_collector,
 		Pdf_Report_Service_Interface $pdf_service,
-		Email_Service_Interface $email_service
+		Email_Service_Interface $email_service,
+		Template_Renderer $template_renderer
 	) {
 		$this->project_repository      = $project_repository;
 		$this->subscription_repository = $subscription_repository;
 		$this->data_collector          = $data_collector;
 		$this->pdf_service             = $pdf_service;
 		$this->email_service           = $email_service;
+		$this->template_renderer       = $template_renderer;
 	}
 
 	/**
@@ -160,7 +171,8 @@ final class Audit_Report_Notifier {
 			$project->name()->value()
 		);
 
-		$body = $this->render_template(
+		$body = $this->template_renderer->render_to_string(
+			'emails/audit-report.php',
 			[
 				'project_name'  => $project->name()->value(),
 				'date'          => wp_date( 'Y-m-d H:i' ),
@@ -179,24 +191,5 @@ final class Audit_Report_Notifier {
 				$filename
 			);
 		}
-	}
-
-	/**
-	 * Render the report email body partial with output buffering.
-	 *
-	 * @param array<string, mixed> $context Variables to extract.
-	 *
-	 * @return string
-	 */
-	private function render_template( array $context ): string {
-		$file = LEASTUDIOS_SITEAUDIT_DIR . 'templates/emails/audit-report.php';
-
-		ob_start();
-		// phpcs:ignore WordPress.PHP.DontExtract.extract_extract -- partials use bare names.
-		extract( $context, EXTR_SKIP );
-		include $file;
-		$html = ob_get_clean();
-
-		return false === $html ? '' : (string) $html;
 	}
 }
