@@ -35,7 +35,7 @@ use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Url_Repository_Interfac
  *      weight descending; categories sorted alphabetically.
  *   6. Tally severity counts.
  */
-final class Pdf_Report_Data_Collector {
+final class Pdf_Report_Data_Collector implements Pdf_Report_Data_Collector_Interface {
 
 	/**
 	 * URL repository.

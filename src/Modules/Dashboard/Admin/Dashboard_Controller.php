@@ -19,6 +19,7 @@ use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Audit_Repository_Inte
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Issue_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Run_Strategy;
 use LEAStudios\SiteAudit\Modules\Dashboard\Application\Services\Dashboard_Statistics;
+use LEAStudios\SiteAudit\Modules\Notification\Domain\Repositories\Email_Subscription_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Models\Url;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Project_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Url_Repository_Interface;
@@ -80,14 +81,23 @@ final class Dashboard_Controller {
 	private Trend_Calculator $trend_calculator;
 
 	/**
+	 * Subscription repository (for the Subscribe / Unsubscribe button on
+	 * the project detail view).
+	 *
+	 * @var Email_Subscription_Repository_Interface
+	 */
+	private Email_Subscription_Repository_Interface $subscription_repository;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param Project_Repository_Interface $project_repository Project repo.
-	 * @param Url_Repository_Interface     $url_repository     URL repo.
-	 * @param Audit_Repository_Interface   $audit_repository   Audit repo.
-	 * @param Issue_Repository_Interface   $issue_repository   Issue repo.
-	 * @param Dashboard_Statistics         $statistics         Aggregator service.
-	 * @param Trend_Calculator             $trend_calculator   Trend calculator.
+	 * @param Project_Repository_Interface            $project_repository      Project repo.
+	 * @param Url_Repository_Interface                $url_repository          URL repo.
+	 * @param Audit_Repository_Interface              $audit_repository        Audit repo.
+	 * @param Issue_Repository_Interface              $issue_repository        Issue repo.
+	 * @param Dashboard_Statistics                    $statistics              Aggregator service.
+	 * @param Trend_Calculator                        $trend_calculator        Trend calculator.
+	 * @param Email_Subscription_Repository_Interface $subscription_repository Subscription repo (for the Subscribe button).
 	 */
 	public function __construct(
 		Project_Repository_Interface $project_repository,
@@ -95,14 +105,16 @@ final class Dashboard_Controller {
 		Audit_Repository_Interface $audit_repository,
 		Issue_Repository_Interface $issue_repository,
 		Dashboard_Statistics $statistics,
-		Trend_Calculator $trend_calculator
+		Trend_Calculator $trend_calculator,
+		Email_Subscription_Repository_Interface $subscription_repository
 	) {
-		$this->project_repository = $project_repository;
-		$this->url_repository     = $url_repository;
-		$this->audit_repository   = $audit_repository;
-		$this->issue_repository   = $issue_repository;
-		$this->statistics         = $statistics;
-		$this->trend_calculator   = $trend_calculator;
+		$this->project_repository      = $project_repository;
+		$this->url_repository          = $url_repository;
+		$this->audit_repository        = $audit_repository;
+		$this->issue_repository        = $issue_repository;
+		$this->statistics              = $statistics;
+		$this->trend_calculator        = $trend_calculator;
+		$this->subscription_repository = $subscription_repository;
 	}
 
 	/**
@@ -255,12 +267,19 @@ final class Dashboard_Controller {
 		$summary       = $this->statistics->calculate_summary( $urls, $audits_by_url );
 		$url_summaries = $this->statistics->generate_url_summaries( $urls, $audits_by_url );
 
+		$is_subscribed = false;
+		$current_user  = get_current_user_id();
+		if ( null !== $project && $current_user > 0 ) {
+			$is_subscribed = $this->subscription_repository->is_subscribed( $current_user, (int) $project->id() );
+		}
+
 		$this->include_template(
 			'dashboard/project.php',
 			[
 				'project'         => $project,
 				'summary'         => $summary,
 				'url_summaries'   => $url_summaries,
+				'is_subscribed'   => $is_subscribed,
 				'detail_base_url' => $this->page_base_url(),
 				'overview_url'    => $this->page_base_url(),
 			]

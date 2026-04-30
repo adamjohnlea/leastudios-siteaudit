@@ -28,6 +28,11 @@ use LEAStudios\SiteAudit\Modules\Audit\Infrastructure\Repositories\Wpdb_Audit_Re
 use LEAStudios\SiteAudit\Modules\Audit\Infrastructure\Repositories\Wpdb_Issue_Repository;
 use LEAStudios\SiteAudit\Modules\Dashboard\Admin\Dashboard_Controller;
 use LEAStudios\SiteAudit\Modules\Dashboard\Application\Services\Dashboard_Statistics;
+use LEAStudios\SiteAudit\Modules\Notification\Admin\Subscription_Controller;
+use LEAStudios\SiteAudit\Modules\Notification\Application\Services\Alert_Notifier;
+use LEAStudios\SiteAudit\Modules\Notification\Application\Services\Audit_Report_Notifier;
+use LEAStudios\SiteAudit\Modules\Notification\Application\Services\Wp_Mail_Service;
+use LEAStudios\SiteAudit\Modules\Notification\Infrastructure\Repositories\Wpdb_Email_Subscription_Repository;
 use LEAStudios\SiteAudit\Modules\Reporting\Admin\Reporting_Controller;
 use LEAStudios\SiteAudit\Modules\Reporting\Application\Services\Csv_Export_Service;
 use LEAStudios\SiteAudit\Modules\Reporting\Application\Services\Pdf_Report_Data_Collector;
@@ -42,6 +47,7 @@ use LEAStudios\SiteAudit\Modules\Url\Admin\Url_Controller;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Bulk_Import_Service;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Project_Service;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Url_Service;
+use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Project_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Url_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Url\Infrastructure\Repositories\Wpdb_Project_Repository;
 use LEAStudios\SiteAudit\Modules\Url\Infrastructure\Repositories\Wpdb_Url_Repository;
@@ -83,11 +89,32 @@ final class Plugin {
 			$comparison_repository
 		);
 
-		$enqueuer = new As_Action_Enqueuer();
+		$enqueuer                = new As_Action_Enqueuer();
+		$subscription_repository = new Wpdb_Email_Subscription_Repository();
+		$email_service           = new Wp_Mail_Service();
+		$statistics              = new Dashboard_Statistics();
+		$pdf_data_collector      = new Pdf_Report_Data_Collector(
+			$url_repository,
+			$audit_repository,
+			$issue_repository,
+			$statistics
+		);
+		$pdf_report_service      = new Pdf_Report_Service();
 
 		// Scheduler hooks fire on Action Scheduler's own loopback requests
 		// (which are not admin context), so wire them up unconditionally.
 		$this->register_scheduler_hooks( $url_repository, $audit_service, $enqueuer );
+
+		// Notification hooks fire on every successful audit, including those
+		// running in the Action Scheduler worker (non-admin context). Wire
+		// unconditionally for the same reason.
+		$this->register_notification_hooks(
+			$project_repository,
+			$subscription_repository,
+			$pdf_data_collector,
+			$pdf_report_service,
+			$email_service
+		);
 
 		if ( is_admin() ) {
 			$this->init_admin(
@@ -95,6 +122,10 @@ final class Plugin {
 				$url_repository,
 				$audit_repository,
 				$issue_repository,
+				$statistics,
+				$pdf_data_collector,
+				$pdf_report_service,
+				$subscription_repository,
 				$enqueuer
 			);
 		}
@@ -169,13 +200,61 @@ final class Plugin {
 	}
 
 	/**
+	 * Wire `Alert_Notifier` and `Audit_Report_Notifier` to the audit-completed
+	 * action. Fires unconditionally because the worker that emits the action
+	 * runs in non-admin context (Action Scheduler loopback request).
+	 *
+	 * @param Project_Repository_Interface       $project_repository      Project repo.
+	 * @param Wpdb_Email_Subscription_Repository $subscription_repository Subscription repo.
+	 * @param Pdf_Report_Data_Collector          $pdf_data_collector      PDF data collector.
+	 * @param Pdf_Report_Service                 $pdf_report_service      PDF rendering service.
+	 * @param Wp_Mail_Service                    $email_service           Mail transport.
+	 *
+	 * @return void
+	 */
+	private function register_notification_hooks(
+		Project_Repository_Interface $project_repository,
+		Wpdb_Email_Subscription_Repository $subscription_repository,
+		Pdf_Report_Data_Collector $pdf_data_collector,
+		Pdf_Report_Service $pdf_report_service,
+		Wp_Mail_Service $email_service
+	): void {
+		$alert_notifier  = new Alert_Notifier( $subscription_repository, $email_service );
+		$report_notifier = new Audit_Report_Notifier(
+			$project_repository,
+			$subscription_repository,
+			$pdf_data_collector,
+			$pdf_report_service,
+			$email_service
+		);
+
+		add_action(
+			'leastudios_siteaudit_audit_completed',
+			[ $alert_notifier, 'notify_if_threshold_breached' ],
+			10,
+			3
+		);
+
+		add_action(
+			'leastudios_siteaudit_audit_completed',
+			[ $report_notifier, 'on_audit_completed' ],
+			10,
+			3
+		);
+	}
+
+	/**
 	 * Initialize admin-specific functionality.
 	 *
-	 * @param Wpdb_Project_Repository   $project_repository Project repo.
-	 * @param Wpdb_Url_Repository       $url_repository     URL repo.
-	 * @param Wpdb_Audit_Repository     $audit_repository   Audit repo.
-	 * @param Wpdb_Issue_Repository     $issue_repository   Issue repo.
-	 * @param Action_Enqueuer_Interface $enqueuer           Async action enqueuer for "Run audit now".
+	 * @param Wpdb_Project_Repository            $project_repository      Project repo.
+	 * @param Wpdb_Url_Repository                $url_repository          URL repo.
+	 * @param Wpdb_Audit_Repository              $audit_repository        Audit repo.
+	 * @param Wpdb_Issue_Repository              $issue_repository        Issue repo.
+	 * @param Dashboard_Statistics               $statistics              Stats service.
+	 * @param Pdf_Report_Data_Collector          $pdf_data_collector      PDF data collector.
+	 * @param Pdf_Report_Service                 $pdf_report_service      PDF rendering service.
+	 * @param Wpdb_Email_Subscription_Repository $subscription_repository Subscription repo.
+	 * @param Action_Enqueuer_Interface          $enqueuer                Async action enqueuer for "Run audit now".
 	 *
 	 * @return void
 	 */
@@ -184,6 +263,10 @@ final class Plugin {
 		Wpdb_Url_Repository $url_repository,
 		Wpdb_Audit_Repository $audit_repository,
 		Wpdb_Issue_Repository $issue_repository,
+		Dashboard_Statistics $statistics,
+		Pdf_Report_Data_Collector $pdf_data_collector,
+		Pdf_Report_Service $pdf_report_service,
+		Wpdb_Email_Subscription_Repository $subscription_repository,
 		Action_Enqueuer_Interface $enqueuer
 	): void {
 		( new Settings_Page() )->init();
@@ -192,15 +275,14 @@ final class Plugin {
 		$url_service         = new Url_Service( $url_repository );
 		$bulk_import_service = new Bulk_Import_Service( $url_repository );
 
-		$statistics = new Dashboard_Statistics();
-
 		( new Dashboard_Controller(
 			$project_repository,
 			$url_repository,
 			$audit_repository,
 			$issue_repository,
 			$statistics,
-			new Trend_Calculator()
+			new Trend_Calculator(),
+			$subscription_repository
 		) )->init();
 
 		( new Project_Controller( $project_service ) )->init();
@@ -218,13 +300,13 @@ final class Plugin {
 			$audit_repository,
 			$statistics,
 			new Csv_Export_Service(),
-			new Pdf_Report_Data_Collector(
-				$url_repository,
-				$audit_repository,
-				$issue_repository,
-				$statistics
-			),
-			new Pdf_Report_Service()
+			$pdf_data_collector,
+			$pdf_report_service
+		) )->init();
+
+		( new Subscription_Controller(
+			$project_repository,
+			$subscription_repository
 		) )->init();
 	}
 

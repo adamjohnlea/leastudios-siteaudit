@@ -26,7 +26,7 @@ use LEAStudios\SiteAudit\Modules\Reporting\Domain\ValueObjects\Project_Report_Da
  *   - `setDefaultFont('Helvetica')` — bundled with Dompdf, always available.
  *   - A4 portrait — matches the source app's stationery.
  */
-final class Pdf_Report_Service {
+final class Pdf_Report_Service implements Pdf_Report_Service_Interface {
 
 	/**
 	 * Generate a PDF from a project report VO.

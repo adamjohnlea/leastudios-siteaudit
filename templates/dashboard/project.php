@@ -7,6 +7,7 @@
  * @var \LEAStudios\SiteAudit\Modules\Url\Domain\Models\Project|null $project
  * @var \LEAStudios\SiteAudit\Modules\Dashboard\Domain\ValueObjects\Dashboard_Summary $summary
  * @var array<int, \LEAStudios\SiteAudit\Modules\Dashboard\Domain\ValueObjects\Url_Summary> $url_summaries
+ * @var bool $is_subscribed
  * @var string $detail_base_url
  * @var string $overview_url
  */
@@ -71,6 +72,18 @@ $page_title = null !== $project
 		<a href="<?php echo esc_url( $pdf_url ); ?>" class="page-title-action">
 			<?php esc_html_e( 'Download report (PDF)', 'leastudios-siteaudit' ); ?>
 		</a>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline;">
+			<?php wp_nonce_field( \LEAStudios\SiteAudit\Modules\Notification\Admin\Subscription_Controller::ACTION_TOGGLE ); ?>
+			<input type="hidden" name="action" value="<?php echo esc_attr( \LEAStudios\SiteAudit\Modules\Notification\Admin\Subscription_Controller::ACTION_TOGGLE ); ?>" />
+			<input type="hidden" name="project_id" value="<?php echo esc_attr( (string) (int) $project->id() ); ?>" />
+			<button type="submit" class="page-title-action">
+				<?php
+				echo $is_subscribed
+					? esc_html__( 'Unsubscribe from emails', 'leastudios-siteaudit' )
+					: esc_html__( 'Subscribe to emails', 'leastudios-siteaudit' );
+				?>
+			</button>
+		</form>
 	<?php endif; ?>
 	<hr class="wp-header-end" />
 

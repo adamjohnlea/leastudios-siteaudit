@@ -189,6 +189,16 @@ final class Audit_Service implements Audit_Service_Interface {
 
 		$audit = $this->audit_repository->save( $audit );
 
+		// Snapshot the prior completed audit BEFORE the current row is marked
+		// COMPLETED. Otherwise the find_latest_completed query can return the
+		// current row itself (it has the latest audit_date). This snapshot
+		// is also what we hand to the audit-completed action, so listeners
+		// (e.g. Alert_Notifier) can compute "score dropped from X to Y".
+		$previous_audit = $this->audit_repository->find_latest_completed_by_url_id_and_strategy(
+			$url->id() ?? 0,
+			$strategy
+		);
+
 		try {
 			$api_response = $this->execute_with_retry( $url->url()->value(), $strategy, $audit );
 
@@ -199,15 +209,20 @@ final class Audit_Service implements Audit_Service_Interface {
 
 			$this->extract_and_save_issues( $audit, $api_response );
 
-			$previous_audit = $this->audit_repository->find_latest_completed_by_url_id_and_strategy(
-				$url->id() ?? 0,
-				$strategy
-			);
-
-			if ( null !== $previous_audit && $previous_audit->id() !== $audit->id() ) {
+			if ( null !== $previous_audit ) {
 				$comparison = $this->comparison_service->compare( $audit, $previous_audit );
 				$this->comparison_repository->save( $comparison );
 			}
+
+			/**
+			 * Fires after a successful audit run, once score, issues, and
+			 * comparison row have been persisted.
+			 *
+			 * @param Audit      $audit          Just-completed audit.
+			 * @param Url        $url            URL the audit ran on.
+			 * @param Audit|null $previous_audit Prior completed audit for the same (URL, strategy), or null if first run.
+			 */
+			do_action( 'leastudios_siteaudit_audit_completed', $audit, $url, $previous_audit );
 		} catch ( Api_Exception $e ) {
 			$audit->set_status( Audit_Status::FAILED );
 			$audit->set_error_message( $e->getMessage() );

@@ -15,8 +15,8 @@ use LEAStudios\SiteAudit\Capabilities;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Audit_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Dashboard\Application\Services\Dashboard_Statistics;
 use LEAStudios\SiteAudit\Modules\Reporting\Application\Services\Csv_Export_Service;
-use LEAStudios\SiteAudit\Modules\Reporting\Application\Services\Pdf_Report_Data_Collector;
-use LEAStudios\SiteAudit\Modules\Reporting\Application\Services\Pdf_Report_Service;
+use LEAStudios\SiteAudit\Modules\Reporting\Application\Services\Pdf_Report_Data_Collector_Interface;
+use LEAStudios\SiteAudit\Modules\Reporting\Application\Services\Pdf_Report_Service_Interface;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Project_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Url_Repository_Interface;
 
@@ -77,27 +77,27 @@ final class Reporting_Controller {
 	/**
 	 * PDF report data collector.
 	 *
-	 * @var Pdf_Report_Data_Collector
+	 * @var Pdf_Report_Data_Collector_Interface
 	 */
-	private Pdf_Report_Data_Collector $pdf_data_collector;
+	private Pdf_Report_Data_Collector_Interface $pdf_data_collector;
 
 	/**
 	 * PDF report service.
 	 *
-	 * @var Pdf_Report_Service
+	 * @var Pdf_Report_Service_Interface
 	 */
-	private Pdf_Report_Service $pdf_report_service;
+	private Pdf_Report_Service_Interface $pdf_report_service;
 
 	/**
 	 * Constructor.
 	 *
-	 * @param Project_Repository_Interface $project_repository  Project repo.
-	 * @param Url_Repository_Interface     $url_repository      URL repo.
-	 * @param Audit_Repository_Interface   $audit_repository    Audit repo.
-	 * @param Dashboard_Statistics         $statistics          Stats service.
-	 * @param Csv_Export_Service           $csv_export_service  CSV service.
-	 * @param Pdf_Report_Data_Collector    $pdf_data_collector  PDF data collector.
-	 * @param Pdf_Report_Service           $pdf_report_service  PDF rendering service.
+	 * @param Project_Repository_Interface        $project_repository  Project repo.
+	 * @param Url_Repository_Interface            $url_repository      URL repo.
+	 * @param Audit_Repository_Interface          $audit_repository    Audit repo.
+	 * @param Dashboard_Statistics                $statistics          Stats service.
+	 * @param Csv_Export_Service                  $csv_export_service  CSV service.
+	 * @param Pdf_Report_Data_Collector_Interface $pdf_data_collector  PDF data collector.
+	 * @param Pdf_Report_Service_Interface        $pdf_report_service  PDF rendering service.
 	 */
 	public function __construct(
 		Project_Repository_Interface $project_repository,
@@ -105,8 +105,8 @@ final class Reporting_Controller {
 		Audit_Repository_Interface $audit_repository,
 		Dashboard_Statistics $statistics,
 		Csv_Export_Service $csv_export_service,
-		Pdf_Report_Data_Collector $pdf_data_collector,
-		Pdf_Report_Service $pdf_report_service
+		Pdf_Report_Data_Collector_Interface $pdf_data_collector,
+		Pdf_Report_Service_Interface $pdf_report_service
 	) {
 		$this->project_repository = $project_repository;
 		$this->url_repository     = $url_repository;

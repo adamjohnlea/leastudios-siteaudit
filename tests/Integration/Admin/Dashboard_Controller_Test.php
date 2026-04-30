@@ -44,10 +44,11 @@ final class Dashboard_Controller_Test extends TestCase {
 
 		( new Activation() )->run();
 
-		$project_repository = new Wpdb_Project_Repository();
-		$url_repository     = new Wpdb_Url_Repository();
-		$audit_repository   = new Wpdb_Audit_Repository();
-		$issue_repository   = new Wpdb_Issue_Repository();
+		$project_repository      = new Wpdb_Project_Repository();
+		$url_repository          = new Wpdb_Url_Repository();
+		$audit_repository        = new Wpdb_Audit_Repository();
+		$issue_repository        = new Wpdb_Issue_Repository();
+		$subscription_repository = new \LEAStudios\SiteAudit\Modules\Notification\Infrastructure\Repositories\Wpdb_Email_Subscription_Repository();
 
 		$this->controller = new Dashboard_Controller(
 			$project_repository,
@@ -55,7 +56,8 @@ final class Dashboard_Controller_Test extends TestCase {
 			$audit_repository,
 			$issue_repository,
 			new Dashboard_Statistics(),
-			new Trend_Calculator()
+			new Trend_Calculator(),
+			$subscription_repository
 		);
 
 		$this->settings_page = new Settings_Page();
