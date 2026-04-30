@@ -29,6 +29,7 @@ use LEAStudios\SiteAudit\Modules\Audit\Infrastructure\RateLimiting\Retry_Strateg
 use LEAStudios\SiteAudit\Modules\Url\Domain\Models\Url;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Url_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Audit_Strategy;
+use LEAStudios\SiteAudit\Shared\Datetime_Util;
 use LEAStudios\SiteAudit\Shared\Exceptions\Validation_Exception;
 
 /**
@@ -168,7 +169,7 @@ final class Audit_Service implements Audit_Service_Interface {
 			$results[] = $this->run_single_audit( $url, $strategy, $previous_audits[ $strategy->value ] );
 		}
 
-		$now = \LEAStudios\SiteAudit\Shared\Datetime_Util::now();
+		$now = Datetime_Util::now();
 		$url->set_last_audited_at( $now );
 		$url->set_updated_at( $now );
 		$this->url_repository->update( $url );
@@ -201,7 +202,7 @@ final class Audit_Service implements Audit_Service_Interface {
 	 * @return Audit
 	 */
 	private function run_single_audit( Url $url, Run_Strategy $strategy, ?Audit $previous_audit ): Audit {
-		$now   = \LEAStudios\SiteAudit\Shared\Datetime_Util::now();
+		$now   = Datetime_Util::now();
 		$audit = new Audit(
 			null,
 			$url->id() ?? 0,
@@ -299,7 +300,7 @@ final class Audit_Service implements Audit_Service_Interface {
 				$this->clean_description( $failing_audit['description'] ),
 				$element_selector,
 				$failing_audit['helpUrl'],
-				\LEAStudios\SiteAudit\Shared\Datetime_Util::now(),
+				Datetime_Util::now(),
 				$failing_audit['title'],
 			);
 		}
@@ -317,15 +318,33 @@ final class Audit_Service implements Audit_Service_Interface {
 	 * @return Issue_Category
 	 */
 	private function map_category( string $audit_id ): Issue_Category {
-		return match ( true ) {
-			str_contains( $audit_id, 'color-contrast' )                                                                            => Issue_Category::COLOR_CONTRAST,
-			str_contains( $audit_id, 'aria' )                                                                                      => Issue_Category::ARIA,
-			str_contains( $audit_id, 'label' ), str_contains( $audit_id, 'form' )                                                  => Issue_Category::FORMS,
-			str_contains( $audit_id, 'image' ), str_contains( $audit_id, 'alt' )                                                   => Issue_Category::IMAGES,
-			str_contains( $audit_id, 'tabindex' ), str_contains( $audit_id, 'focus' ), str_contains( $audit_id, 'link' )           => Issue_Category::NAVIGATION,
-			str_contains( $audit_id, 'table' ), str_contains( $audit_id, 'th' ), str_contains( $audit_id, 'td' )                   => Issue_Category::TABLES,
-			default                                                                                                                => Issue_Category::OTHER,
-		};
+		// Substring → category, evaluated in declaration order. The first
+		// matching keyword wins, so order matters: more-specific keywords
+		// come first (e.g. `color-contrast` before the generic `color`),
+		// and ambiguous overlaps (an audit id containing both `image` and
+		// `form`) resolve to whichever appears earlier here.
+		$rules = [
+			'color-contrast' => Issue_Category::COLOR_CONTRAST,
+			'aria'           => Issue_Category::ARIA,
+			'label'          => Issue_Category::FORMS,
+			'form'           => Issue_Category::FORMS,
+			'image'          => Issue_Category::IMAGES,
+			'alt'            => Issue_Category::IMAGES,
+			'tabindex'       => Issue_Category::NAVIGATION,
+			'focus'          => Issue_Category::NAVIGATION,
+			'link'           => Issue_Category::NAVIGATION,
+			'table'          => Issue_Category::TABLES,
+			'th'             => Issue_Category::TABLES,
+			'td'             => Issue_Category::TABLES,
+		];
+
+		foreach ( $rules as $keyword => $category ) {
+			if ( str_contains( $audit_id, $keyword ) ) {
+				return $category;
+			}
+		}
+
+		return Issue_Category::OTHER;
 	}
 
 	/**

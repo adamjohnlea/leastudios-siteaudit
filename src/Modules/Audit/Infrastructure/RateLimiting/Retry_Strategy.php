@@ -51,7 +51,11 @@ final class Retry_Strategy {
 	public function __construct(
 		int $max_retries = 3,
 		int $base_delay_ms = 1000,
-		int $max_delay_ms = 30000
+		// Cap at 5s rather than 30s so a backoff sleep does not block an
+		// Action Scheduler worker for tens of seconds. AS workers are
+		// loopback HTTP requests and a stalled worker stalls the queue;
+		// 5s × max_retries is the most one URL can hold a worker.
+		int $max_delay_ms = 5000
 	) {
 		$this->max_retries   = $max_retries;
 		$this->base_delay_ms = $base_delay_ms;

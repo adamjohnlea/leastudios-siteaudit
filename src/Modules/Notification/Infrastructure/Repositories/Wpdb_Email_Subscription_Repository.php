@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit;
 
 use LEAStudios\SiteAudit\Database\Schema;
 use LEAStudios\SiteAudit\Modules\Notification\Domain\Repositories\Email_Subscription_Repository_Interface;
+use LEAStudios\SiteAudit\Shared\Datetime_Util;
 
 /**
  * Implements {@see Email_Subscription_Repository_Interface} on top of `$wpdb`.
@@ -66,7 +67,7 @@ final class Wpdb_Email_Subscription_Repository implements Email_Subscription_Rep
 			"INSERT IGNORE INTO {$this->table} (user_id, project_id, created_at) VALUES (%d, %d, %s)",
 			$user_id,
 			$project_id,
-			( \LEAStudios\SiteAudit\Shared\Datetime_Util::now() )->format( 'Y-m-d H:i:s' )
+			Datetime_Util::now()->format( 'Y-m-d H:i:s' )
 		);
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared

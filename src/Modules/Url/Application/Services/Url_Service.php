@@ -16,6 +16,7 @@ use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Url_Repository_Interfac
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Audit_Frequency;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Audit_Strategy;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Url_Address;
+use LEAStudios\SiteAudit\Shared\Datetime_Util;
 use LEAStudios\SiteAudit\Shared\Exceptions\Validation_Exception;
 
 /**
@@ -78,7 +79,7 @@ final class Url_Service {
 		$audit_frequency   = $this->resolve_frequency( $frequency );
 		$resolved_strategy = $this->resolve_audit_strategy( $audit_strategy );
 		$this->validate_alert_thresholds( $alert_threshold_score, $alert_threshold_drop );
-		$now = \LEAStudios\SiteAudit\Shared\Datetime_Util::now();
+		$now = Datetime_Util::now();
 
 		$url_model = new Url(
 			null,
@@ -171,7 +172,7 @@ final class Url_Service {
 		$url->set_alert_threshold_score( $resolved_threshold_score );
 		$url->set_alert_threshold_drop( $resolved_threshold_drop );
 
-		$url->set_updated_at( \LEAStudios\SiteAudit\Shared\Datetime_Util::now() );
+		$url->set_updated_at( Datetime_Util::now() );
 
 		return $this->url_repository->update( $url );
 	}

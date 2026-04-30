@@ -15,6 +15,7 @@ use LEAStudios\SiteAudit\Modules\Audit\Domain\Models\Audit;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Models\Audit_Comparison;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Score_Delta;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Trend;
+use LEAStudios\SiteAudit\Shared\Datetime_Util;
 
 /**
  * Pure-function comparator between two audits.
@@ -53,7 +54,7 @@ final class Comparison_Service {
 			count( $resolved_issues ),
 			count( $persistent_issues ),
 			Trend::from_delta( $delta ),
-			\LEAStudios\SiteAudit\Shared\Datetime_Util::now(),
+			Datetime_Util::now(),
 		);
 	}
 

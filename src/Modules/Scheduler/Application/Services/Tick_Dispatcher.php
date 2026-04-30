@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit;
 
 use LEAStudios\SiteAudit\Modules\Url\Domain\Models\Url;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Url_Repository_Interface;
+use LEAStudios\SiteAudit\Shared\Datetime_Util;
 
 /**
  * Periodic tick handler. Loops every enabled URL, decides whether each is
@@ -77,7 +78,7 @@ final class Tick_Dispatcher {
 	 * @return int Number of URLs whose audits were enqueued by this tick.
 	 */
 	public function tick( ?\DateTimeImmutable $now = null ): int {
-		$now      = $now ?? \LEAStudios\SiteAudit\Shared\Datetime_Util::now();
+		$now      = $now ?? Datetime_Util::now();
 		$enqueued = 0;
 
 		foreach ( $this->url_repository->find_enabled() as $url ) {

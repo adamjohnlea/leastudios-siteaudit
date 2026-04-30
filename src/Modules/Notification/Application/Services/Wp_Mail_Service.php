@@ -59,8 +59,7 @@ final class Wp_Mail_Service implements Email_Service_Interface {
 		$result = wp_mail( $to, $subject, $body, $this->html_headers() );
 
 		if ( ! $result ) {
-			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- intentional error logging at the email boundary.
-			error_log( sprintf( '[leastudios-siteaudit] wp_mail returned false for %s (subject: %s)', $to, $subject ) );
+			$this->report_failure( $to, $subject );
 		}
 
 		return (bool) $result;
@@ -99,7 +98,40 @@ final class Wp_Mail_Service implements Email_Service_Interface {
 
 		$this->schedule_cleanup( $temp_file );
 
+		if ( ! $result ) {
+			$this->report_failure( $to, $subject );
+		}
+
 		return (bool) $result;
+	}
+
+	/**
+	 * Report a delivery failure without leaking PII to the PHP error log.
+	 *
+	 * On many shared hosts the PHP error log is web-accessible to non-admins
+	 * (e.g. `/error_log` next to `wp-config.php`). Putting recipient
+	 * addresses or subject lines (which often quote password-reset links and
+	 * the like) into that file is a privacy issue. We fire an action so site
+	 * owners can wire the rich payload into a logger of their choice, and
+	 * keep the error_log line PII-free.
+	 *
+	 * @param string $to      Recipient address.
+	 * @param string $subject Subject line.
+	 * @return void
+	 */
+	private function report_failure( string $to, string $subject ): void {
+		/**
+		 * Fires when wp_mail returns false for a notification email.
+		 *
+		 * @since 1.0.0
+		 *
+		 * @param string $to      Recipient address.
+		 * @param string $subject Subject line.
+		 */
+		do_action( 'leastudios_siteaudit_mail_failed', $to, $subject );
+
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- PII-free fallback log line.
+		error_log( '[leastudios-siteaudit] mail_send_failed' );
 	}
 
 	/**
@@ -182,7 +214,10 @@ final class Wp_Mail_Service implements Email_Service_Interface {
 		// instead; the extension always comes from filenames we control.
 		$raw_extension = (string) pathinfo( $filename, PATHINFO_EXTENSION );
 		$extension     = preg_replace( '/[^a-z0-9]/', '', strtolower( $raw_extension ) ) ?? '';
-		$path          = trailingslashit( $dir ) . uniqid( 'lsa-att-', true );
+		// `wp_generate_uuid4()` is the WP-idiomatic way to mint a unique
+		// filename — `uniqid()` is microsecond-precision and not RNG-backed,
+		// which is fine for this use case but reads as legacy.
+		$path = trailingslashit( $dir ) . 'lsa-att-' . wp_generate_uuid4();
 		if ( '' !== $extension ) {
 			$path .= '.' . $extension;
 		}

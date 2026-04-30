@@ -17,6 +17,7 @@ use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Audit_Frequency;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Audit_Strategy;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Bulk_Import_Result;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Url_Address;
+use LEAStudios\SiteAudit\Shared\Datetime_Util;
 use LEAStudios\SiteAudit\Shared\Exceptions\Validation_Exception;
 
 /**
@@ -200,7 +201,7 @@ final class Bulk_Import_Service {
 			$frequency = Audit_Frequency::tryFrom( $row['frequency'] )
 				?? Audit_Frequency::tryFrom( $default_frequency )
 				?? Audit_Frequency::WEEKLY;
-			$now       = \LEAStudios\SiteAudit\Shared\Datetime_Util::now();
+			$now       = Datetime_Util::now();
 
 			$url_model = new Url(
 				null,

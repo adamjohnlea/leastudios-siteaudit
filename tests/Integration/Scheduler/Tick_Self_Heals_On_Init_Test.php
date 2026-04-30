@@ -30,12 +30,19 @@ final class Tick_Self_Heals_On_Init_Test extends TestCase {
 		if ( function_exists( 'as_unschedule_all_actions' ) ) {
 			as_unschedule_all_actions( Plugin::TICK_HOOK );
 		}
+
+		// register_recurring_tick caches an "already scheduled" affirmative
+		// in a transient to avoid hitting the AS query on every page load.
+		// Clear it so a freshly-cleaned scheduler queue actually triggers
+		// the schedule path again.
+		delete_transient( 'leastudios_siteaudit_tick_scheduled' );
 	}
 
 	public function tear_down(): void {
 		if ( function_exists( 'as_unschedule_all_actions' ) ) {
 			as_unschedule_all_actions( Plugin::TICK_HOOK );
 		}
+		delete_transient( 'leastudios_siteaudit_tick_scheduled' );
 		parent::tear_down();
 	}
 
