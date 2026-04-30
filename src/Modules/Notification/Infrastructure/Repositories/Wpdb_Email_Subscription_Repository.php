@@ -12,6 +12,7 @@ namespace LEAStudios\SiteAudit\Modules\Notification\Infrastructure\Repositories;
 defined( 'ABSPATH' ) || exit;
 
 use LEAStudios\SiteAudit\Database\Schema;
+use LEAStudios\SiteAudit\Database\Wpdb_Repository_Base;
 use LEAStudios\SiteAudit\Modules\Notification\Domain\Repositories\Email_Subscription_Repository_Interface;
 use LEAStudios\SiteAudit\Shared\Datetime_Util;
 
@@ -25,21 +26,7 @@ use LEAStudios\SiteAudit\Shared\Datetime_Util;
  * and returns hydrated `WP_User` objects; orphan subscription rows whose
  * user no longer exists are dropped by the INNER JOIN.
  */
-final class Wpdb_Email_Subscription_Repository implements Email_Subscription_Repository_Interface {
-
-	/**
-	 * WP database abstraction.
-	 *
-	 * @var \wpdb
-	 */
-	private \wpdb $wpdb;
-
-	/**
-	 * Fully prefixed subscriptions table name.
-	 *
-	 * @var string
-	 */
-	private string $table;
+final class Wpdb_Email_Subscription_Repository extends Wpdb_Repository_Base implements Email_Subscription_Repository_Interface {
 
 	/**
 	 * Constructor.
@@ -47,8 +34,7 @@ final class Wpdb_Email_Subscription_Repository implements Email_Subscription_Rep
 	 * @param \wpdb|null $wpdb Optional `$wpdb` override.
 	 */
 	public function __construct( ?\wpdb $wpdb = null ) {
-		$this->wpdb  = $wpdb ?? $GLOBALS['wpdb'];
-		$this->table = Schema::table( Schema::TABLE_EMAIL_SUBSCRIPTIONS );
+		parent::__construct( $wpdb, Schema::TABLE_EMAIL_SUBSCRIPTIONS );
 	}
 
 	/**

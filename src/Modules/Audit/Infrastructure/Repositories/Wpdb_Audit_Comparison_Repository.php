@@ -12,6 +12,7 @@ namespace LEAStudios\SiteAudit\Modules\Audit\Infrastructure\Repositories;
 defined( 'ABSPATH' ) || exit;
 
 use LEAStudios\SiteAudit\Database\Schema;
+use LEAStudios\SiteAudit\Database\Wpdb_Repository_Base;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Models\Audit_Comparison;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Audit_Comparison_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Score_Delta;
@@ -24,21 +25,7 @@ use LEAStudios\SiteAudit\Shared\Datetime_Util;
  * `find_by_url_id()` joins to the audits table to filter on the current audit's
  * URL ownership.
  */
-final class Wpdb_Audit_Comparison_Repository implements Audit_Comparison_Repository_Interface {
-
-	/**
-	 * WP database abstraction.
-	 *
-	 * @var \wpdb
-	 */
-	private \wpdb $wpdb;
-
-	/**
-	 * Fully prefixed comparison table name.
-	 *
-	 * @var string
-	 */
-	private string $table;
+final class Wpdb_Audit_Comparison_Repository extends Wpdb_Repository_Base implements Audit_Comparison_Repository_Interface {
 
 	/**
 	 * Fully prefixed audits table name (used for the URL join).
@@ -53,8 +40,7 @@ final class Wpdb_Audit_Comparison_Repository implements Audit_Comparison_Reposit
 	 * @param \wpdb|null $wpdb Optional `$wpdb` override (mostly for tests).
 	 */
 	public function __construct( ?\wpdb $wpdb = null ) {
-		$this->wpdb         = $wpdb ?? $GLOBALS['wpdb'];
-		$this->table        = Schema::table( Schema::TABLE_AUDIT_COMPARISONS );
+		parent::__construct( $wpdb, Schema::TABLE_AUDIT_COMPARISONS );
 		$this->audits_table = Schema::table( Schema::TABLE_AUDITS );
 	}
 

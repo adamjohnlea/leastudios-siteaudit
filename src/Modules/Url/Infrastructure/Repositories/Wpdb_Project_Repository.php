@@ -12,6 +12,7 @@ namespace LEAStudios\SiteAudit\Modules\Url\Infrastructure\Repositories;
 defined( 'ABSPATH' ) || exit;
 
 use LEAStudios\SiteAudit\Database\Schema;
+use LEAStudios\SiteAudit\Database\Wpdb_Repository_Base;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Models\Project;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Project_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Project_Name;
@@ -25,21 +26,7 @@ use LEAStudios\SiteAudit\Shared\Datetime_Util;
  * {@see Schema::TABLE_PROJECTS} is a hard-coded class constant and `$wpdb->prefix`
  * is trusted; all caller-supplied data goes through `$wpdb->prepare()` placeholders.
  */
-final class Wpdb_Project_Repository implements Project_Repository_Interface {
-
-	/**
-	 * WP database abstraction.
-	 *
-	 * @var \wpdb
-	 */
-	private \wpdb $wpdb;
-
-	/**
-	 * Fully prefixed table name.
-	 *
-	 * @var string
-	 */
-	private string $table;
+final class Wpdb_Project_Repository extends Wpdb_Repository_Base implements Project_Repository_Interface {
 
 	/**
 	 * Constructor.
@@ -47,8 +34,7 @@ final class Wpdb_Project_Repository implements Project_Repository_Interface {
 	 * @param \wpdb|null $wpdb Optional `$wpdb` override (mostly for tests).
 	 */
 	public function __construct( ?\wpdb $wpdb = null ) {
-		$this->wpdb  = $wpdb ?? $GLOBALS['wpdb'];
-		$this->table = Schema::table( Schema::TABLE_PROJECTS );
+		parent::__construct( $wpdb, Schema::TABLE_PROJECTS );
 	}
 
 	/**
