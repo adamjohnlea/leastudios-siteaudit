@@ -12,6 +12,7 @@ namespace LEAStudios\SiteAudit\Modules\Audit\Infrastructure\Repositories;
 defined( 'ABSPATH' ) || exit;
 
 use LEAStudios\SiteAudit\Database\Schema;
+use LEAStudios\SiteAudit\Database\Wpdb_Repository_Base;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Models\Audit;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Audit_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Accessibility_Score;
@@ -27,21 +28,7 @@ use LEAStudios\SiteAudit\Shared\Datetime_Util;
  * class constant and `$wpdb->prefix` is trusted. All caller-supplied data flows
  * through `$wpdb->prepare()` placeholders.
  */
-final class Wpdb_Audit_Repository implements Audit_Repository_Interface {
-
-	/**
-	 * WP database abstraction.
-	 *
-	 * @var \wpdb
-	 */
-	private \wpdb $wpdb;
-
-	/**
-	 * Fully prefixed table name.
-	 *
-	 * @var string
-	 */
-	private string $table;
+final class Wpdb_Audit_Repository extends Wpdb_Repository_Base implements Audit_Repository_Interface {
 
 	/**
 	 * Constructor.
@@ -49,8 +36,7 @@ final class Wpdb_Audit_Repository implements Audit_Repository_Interface {
 	 * @param \wpdb|null $wpdb Optional `$wpdb` override (mostly for tests).
 	 */
 	public function __construct( ?\wpdb $wpdb = null ) {
-		$this->wpdb  = $wpdb ?? $GLOBALS['wpdb'];
-		$this->table = Schema::table( Schema::TABLE_AUDITS );
+		parent::__construct( $wpdb, Schema::TABLE_AUDITS );
 	}
 
 	/**
