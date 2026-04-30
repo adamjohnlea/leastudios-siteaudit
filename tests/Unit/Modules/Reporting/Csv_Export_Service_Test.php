@@ -94,6 +94,36 @@ final class Csv_Export_Service_Test extends TestCase {
 		$this->assertStringContainsString( 'N/A', $lines[2] );
 	}
 
+	public function test_export_audits_converts_audit_date_from_utc_to_wp_timezone(): void {
+		// Audits are stored as UTC `DateTimeImmutable`s; the dashboard renders them in
+		// WP's display timezone via Datetime_Util::format_for_display. The CSV must
+		// match — otherwise spreadsheet readers see a different time than the admin UI.
+		update_option( 'timezone_string', 'America/Boise' );
+
+		$utc_date = new \DateTimeImmutable( '2024-01-15 06:30:00', new \DateTimeZone( 'UTC' ) );
+		$audit    = new Audit(
+			null,
+			1,
+			new Accessibility_Score( 85 ),
+			Audit_Status::COMPLETED,
+			Run_Strategy::DESKTOP,
+			$utc_date,
+			null,
+			null,
+			0,
+			$utc_date
+		);
+
+		$csv   = $this->service->export_audits( [ $audit ] );
+		$lines = explode( "\n", trim( $csv ) );
+
+		// 06:30 UTC on 2024-01-15 is 23:30 the previous day in America/Boise (MST, UTC-7).
+		$this->assertStringContainsString( '2024-01-14 23:30:00', $lines[1] );
+
+		// Restore default for any subsequent test that assumes UTC.
+		update_option( 'timezone_string', '' );
+	}
+
 	public function test_export_url_summaries_quotes_cells_with_commas_or_quotes(): void {
 		$summaries = [
 			new Url_Summary( 1, 'Acme, Inc.', 'https://example.com/path,with,commas', 85, 5, 'Weekly', true ),

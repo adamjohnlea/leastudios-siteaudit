@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit;
 
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Models\Audit;
 use LEAStudios\SiteAudit\Modules\Dashboard\Domain\ValueObjects\Url_Summary;
+use LEAStudios\SiteAudit\Shared\Datetime_Util;
 
 /**
  * Pure-function CSV builder for two variants:
@@ -54,7 +55,7 @@ final class Csv_Export_Service {
 			$lines[] = implode(
 				',',
 				[
-					$audit->audit_date()->format( 'Y-m-d H:i:s' ),
+					Datetime_Util::format_for_display( $audit->audit_date(), 'Y-m-d H:i:s' ),
 					(string) $score,
 					$audit->status()->label(),
 					$this->score_to_grade( $score ),
