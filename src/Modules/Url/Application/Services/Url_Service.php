@@ -78,7 +78,7 @@ final class Url_Service {
 		$audit_frequency   = $this->resolve_frequency( $frequency );
 		$resolved_strategy = $this->resolve_audit_strategy( $audit_strategy );
 		$this->validate_alert_thresholds( $alert_threshold_score, $alert_threshold_drop );
-		$now = new \DateTimeImmutable();
+		$now = \LEAStudios\SiteAudit\Shared\Datetime_Util::now();
 
 		$url_model = new Url(
 			null,
@@ -171,7 +171,7 @@ final class Url_Service {
 		$url->set_alert_threshold_score( $resolved_threshold_score );
 		$url->set_alert_threshold_drop( $resolved_threshold_drop );
 
-		$url->set_updated_at( new \DateTimeImmutable() );
+		$url->set_updated_at( \LEAStudios\SiteAudit\Shared\Datetime_Util::now() );
 
 		return $this->url_repository->update( $url );
 	}

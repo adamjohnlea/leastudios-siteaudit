@@ -200,7 +200,7 @@ final class Bulk_Import_Service {
 			$frequency = Audit_Frequency::tryFrom( $row['frequency'] )
 				?? Audit_Frequency::tryFrom( $default_frequency )
 				?? Audit_Frequency::WEEKLY;
-			$now       = new \DateTimeImmutable();
+			$now       = \LEAStudios\SiteAudit\Shared\Datetime_Util::now();
 
 			$url_model = new Url(
 				null,

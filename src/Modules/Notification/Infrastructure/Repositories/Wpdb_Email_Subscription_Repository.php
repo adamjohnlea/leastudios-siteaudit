@@ -66,7 +66,7 @@ final class Wpdb_Email_Subscription_Repository implements Email_Subscription_Rep
 			"INSERT IGNORE INTO {$this->table} (user_id, project_id, created_at) VALUES (%d, %d, %s)",
 			$user_id,
 			$project_id,
-			( new \DateTimeImmutable() )->format( 'Y-m-d H:i:s' )
+			( \LEAStudios\SiteAudit\Shared\Datetime_Util::now() )->format( 'Y-m-d H:i:s' )
 		);
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared

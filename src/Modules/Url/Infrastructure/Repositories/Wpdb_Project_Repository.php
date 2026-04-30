@@ -184,8 +184,8 @@ final class Wpdb_Project_Repository implements Project_Repository_Interface {
 			(int) $row['id'],
 			new Project_Name( (string) $row['name'] ),
 			null !== $row['description'] ? (string) $row['description'] : null,
-			new \DateTimeImmutable( (string) $row['created_at'] ),
-			new \DateTimeImmutable( (string) $row['updated_at'] ),
+			\LEAStudios\SiteAudit\Shared\Datetime_Util::from_mysql( (string) $row['created_at'] ),
+			\LEAStudios\SiteAudit\Shared\Datetime_Util::from_mysql( (string) $row['updated_at'] ),
 		);
 	}
 }

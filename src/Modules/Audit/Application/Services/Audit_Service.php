@@ -168,7 +168,7 @@ final class Audit_Service implements Audit_Service_Interface {
 			$results[] = $this->run_single_audit( $url, $strategy, $previous_audits[ $strategy->value ] );
 		}
 
-		$now = new \DateTimeImmutable();
+		$now = \LEAStudios\SiteAudit\Shared\Datetime_Util::now();
 		$url->set_last_audited_at( $now );
 		$url->set_updated_at( $now );
 		$this->url_repository->update( $url );
@@ -201,7 +201,7 @@ final class Audit_Service implements Audit_Service_Interface {
 	 * @return Audit
 	 */
 	private function run_single_audit( Url $url, Run_Strategy $strategy, ?Audit $previous_audit ): Audit {
-		$now   = new \DateTimeImmutable();
+		$now   = \LEAStudios\SiteAudit\Shared\Datetime_Util::now();
 		$audit = new Audit(
 			null,
 			$url->id() ?? 0,
@@ -299,7 +299,7 @@ final class Audit_Service implements Audit_Service_Interface {
 				$this->clean_description( $failing_audit['description'] ),
 				$element_selector,
 				$failing_audit['helpUrl'],
-				new \DateTimeImmutable(),
+				\LEAStudios\SiteAudit\Shared\Datetime_Util::now(),
 				$failing_audit['title'],
 			);
 		}

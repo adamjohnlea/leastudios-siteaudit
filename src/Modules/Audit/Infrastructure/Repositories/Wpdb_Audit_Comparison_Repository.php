@@ -154,7 +154,7 @@ final class Wpdb_Audit_Comparison_Repository implements Audit_Comparison_Reposit
 			(int) $row['resolved_issues_count'],
 			(int) $row['persistent_issues_count'],
 			Trend::from( (string) $row['trend'] ),
-			new \DateTimeImmutable( (string) $row['created_at'] ),
+			\LEAStudios\SiteAudit\Shared\Datetime_Util::from_mysql( (string) $row['created_at'] ),
 		);
 	}
 }

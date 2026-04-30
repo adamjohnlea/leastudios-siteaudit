@@ -260,11 +260,11 @@ final class Wpdb_Audit_Repository implements Audit_Repository_Interface {
 			new Accessibility_Score( (int) $row['score'] ),
 			Audit_Status::from( (string) $row['status'] ),
 			Run_Strategy::from( (string) $row['strategy'] ),
-			new \DateTimeImmutable( (string) $row['audit_date'] ),
+			\LEAStudios\SiteAudit\Shared\Datetime_Util::from_mysql( (string) $row['audit_date'] ),
 			null !== $row['raw_response'] ? (string) $row['raw_response'] : null,
 			null !== $row['error_message'] ? (string) $row['error_message'] : null,
 			(int) $row['retry_count'],
-			new \DateTimeImmutable( (string) $row['created_at'] ),
+			\LEAStudios\SiteAudit\Shared\Datetime_Util::from_mysql( (string) $row['created_at'] ),
 		);
 	}
 }

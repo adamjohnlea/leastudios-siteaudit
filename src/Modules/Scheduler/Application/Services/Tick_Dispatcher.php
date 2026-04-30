@@ -77,7 +77,7 @@ final class Tick_Dispatcher {
 	 * @return int Number of URLs whose audits were enqueued by this tick.
 	 */
 	public function tick( ?\DateTimeImmutable $now = null ): int {
-		$now      = $now ?? new \DateTimeImmutable();
+		$now      = $now ?? \LEAStudios\SiteAudit\Shared\Datetime_Util::now();
 		$enqueued = 0;
 
 		foreach ( $this->url_repository->find_enabled() as $url ) {

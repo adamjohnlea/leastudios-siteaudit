@@ -53,7 +53,7 @@ final class Comparison_Service {
 			count( $resolved_issues ),
 			count( $persistent_issues ),
 			Trend::from_delta( $delta ),
-			new \DateTimeImmutable(),
+			\LEAStudios\SiteAudit\Shared\Datetime_Util::now(),
 		);
 	}
 

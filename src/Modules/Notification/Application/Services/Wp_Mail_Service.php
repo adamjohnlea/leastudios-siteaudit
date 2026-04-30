@@ -130,7 +130,7 @@ final class Wp_Mail_Service implements Email_Service_Interface {
 		}
 
 		$path  = trailingslashit( $upload_dir['basedir'] ) . 'leastudios-siteaudit-mail.log';
-		$entry = '[' . gmdate( 'Y-m-d H:i:s' ) . ' UTC] ' . $line . "\n";
+		$entry = '[' . wp_date( 'Y-m-d H:i:s' ) . '] ' . $line . "\n";
 
 		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- targeted diagnostic file write.
 		@file_put_contents( $path, $entry, FILE_APPEND );

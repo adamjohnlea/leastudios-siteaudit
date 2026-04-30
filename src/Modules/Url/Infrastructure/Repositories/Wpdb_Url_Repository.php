@@ -337,9 +337,9 @@ final class Wpdb_Url_Repository implements Url_Repository_Interface {
 			(bool) $row['alerts_enabled'],
 			null !== $row['alert_threshold_score'] ? (int) $row['alert_threshold_score'] : null,
 			null !== $row['alert_threshold_drop'] ? (int) $row['alert_threshold_drop'] : null,
-			null !== $row['last_audited_at'] ? new \DateTimeImmutable( (string) $row['last_audited_at'] ) : null,
-			new \DateTimeImmutable( (string) $row['created_at'] ),
-			new \DateTimeImmutable( (string) $row['updated_at'] ),
+			null !== $row['last_audited_at'] ? \LEAStudios\SiteAudit\Shared\Datetime_Util::from_mysql( (string) $row['last_audited_at'] ) : null,
+			\LEAStudios\SiteAudit\Shared\Datetime_Util::from_mysql( (string) $row['created_at'] ),
+			\LEAStudios\SiteAudit\Shared\Datetime_Util::from_mysql( (string) $row['updated_at'] ),
 		);
 	}
 }
