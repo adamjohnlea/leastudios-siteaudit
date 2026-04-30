@@ -11,6 +11,7 @@ namespace LEAStudios\SiteAudit;
 
 defined( 'ABSPATH' ) || exit;
 
+use LEAStudios\SiteAudit\Admin\Api_Key_Notice;
 use LEAStudios\SiteAudit\Admin\Settings_Page;
 use LEAStudios\SiteAudit\Database\Migration;
 use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Audit_Service;
@@ -278,6 +279,7 @@ final class Plugin {
 		Action_Enqueuer_Interface $enqueuer
 	): void {
 		( new Settings_Page() )->init();
+		( new Api_Key_Notice() )->init();
 
 		$project_service     = new Project_Service( $project_repository );
 		$url_service         = new Url_Service( $url_repository );

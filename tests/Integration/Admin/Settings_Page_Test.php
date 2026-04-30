@@ -15,6 +15,7 @@ namespace LEAStudios\SiteAudit\Tests\Integration\Admin;
 
 use LEAStudios\SiteAudit\Activation;
 use LEAStudios\SiteAudit\Admin\Settings_Page;
+use LEAStudios\SiteAudit\Capabilities;
 use LEAStudios\Tests\TestCase;
 
 final class Settings_Page_Test extends TestCase {
@@ -96,5 +97,21 @@ final class Settings_Page_Test extends TestCase {
 		// extra whitespace or accidental HTML doesn't poison the PageSpeed query.
 		$result = $this->page->sanitize_options( [ 'pagespeed_api_key' => "  AIza<script>evil</script>123\n" ] );
 		$this->assertSame( 'AIza123', $result['pagespeed_api_key'] );
+	}
+
+	public function test_render_page_emits_nothing_for_user_without_manage_capability(): void {
+		// Editor has VIEW (read-only access to dashboards) but never MANAGE; the
+		// settings form must stay invisible to them. WP's submenu registration
+		// also gates the page, but we re-check inside render_page() as defense
+		// in depth — this test locks that second check in.
+		$editor_id = self::factory()->user->create( [ 'role' => 'editor' ] );
+		wp_set_current_user( $editor_id );
+		$this->assertFalse( current_user_can( Capabilities::MANAGE ) );
+
+		ob_start();
+		$this->page->render_page();
+		$output = (string) ob_get_clean();
+
+		$this->assertSame( '', $output );
 	}
 }
