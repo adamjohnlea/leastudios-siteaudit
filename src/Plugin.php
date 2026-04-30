@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
 use LEAStudios\SiteAudit\Admin\Api_Key_Notice;
 use LEAStudios\SiteAudit\Admin\Settings_Page;
 use LEAStudios\SiteAudit\Database\Migration;
+use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Audit_Pipeline;
 use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Audit_Service;
 use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Audit_Service_Interface;
 use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Comparison_Service;
@@ -364,8 +365,7 @@ final class Plugin {
 		$api_key     = (string) ( $options['pagespeed_api_key'] ?? '' );
 		$retry_count = (int) ( $options['pagespeed_retry_count'] ?? 3 );
 
-		return new Audit_Service(
-			$url_repository,
+		$pipeline = new Audit_Pipeline(
 			$audit_repository,
 			$issue_repository,
 			new PageSpeed_Api_Client( new Wp_Http_Client(), $api_key ),
@@ -373,5 +373,7 @@ final class Plugin {
 			new Comparison_Service(),
 			$comparison_repository
 		);
+
+		return new Audit_Service( $url_repository, $audit_repository, $pipeline );
 	}
 }
