@@ -55,7 +55,7 @@ final class Csv_Export_Service {
 			$lines[] = implode(
 				',',
 				[
-					$this->escape_csv( Datetime_Util::format_for_display( $audit->audit_date(), 'Y-m-d H:i:s' ) ),
+					$this->escape_csv( Datetime_Util::format_immutable_for_display( $audit->audit_date(), 'Y-m-d H:i:s' ) ),
 					$this->escape_csv( (string) $score ),
 					$this->escape_csv( $audit->status()->label() ),
 					$this->escape_csv( $this->score_to_grade( $score ) ),
