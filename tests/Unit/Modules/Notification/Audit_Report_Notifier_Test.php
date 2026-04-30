@@ -27,6 +27,7 @@ use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Audit_Frequency;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Audit_Strategy;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Project_Name;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Url_Address;
+use LEAStudios\SiteAudit\Shared\Template_Renderer;
 use LEAStudios\Tests\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -58,7 +59,8 @@ final class Audit_Report_Notifier_Test extends TestCase {
 			$this->subscription_repository,
 			$this->data_collector,
 			$this->pdf_service,
-			$this->email_service
+			$this->email_service,
+			new Template_Renderer( LEASTUDIOS_SITEAUDIT_DIR . 'templates' )
 		);
 	}
 

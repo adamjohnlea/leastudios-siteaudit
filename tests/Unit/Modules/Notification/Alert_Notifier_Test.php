@@ -24,6 +24,7 @@ use LEAStudios\SiteAudit\Modules\Url\Domain\Models\Url;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Audit_Frequency;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Audit_Strategy;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Url_Address;
+use LEAStudios\SiteAudit\Shared\Template_Renderer;
 use LEAStudios\Tests\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -40,7 +41,11 @@ final class Alert_Notifier_Test extends TestCase {
 
 		$this->subscription_repository = $this->createMock( Email_Subscription_Repository_Interface::class );
 		$this->email_service           = $this->createMock( Email_Service_Interface::class );
-		$this->notifier                = new Alert_Notifier( $this->subscription_repository, $this->email_service );
+		$this->notifier                = new Alert_Notifier(
+			$this->subscription_repository,
+			$this->email_service,
+			new Template_Renderer( LEASTUDIOS_SITEAUDIT_DIR . 'templates' )
+		);
 	}
 
 	public function test_does_nothing_when_alerts_are_disabled(): void {

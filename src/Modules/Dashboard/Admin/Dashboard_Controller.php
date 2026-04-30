@@ -23,6 +23,7 @@ use LEAStudios\SiteAudit\Modules\Notification\Domain\Repositories\Email_Subscrip
 use LEAStudios\SiteAudit\Modules\Url\Domain\Models\Url;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Project_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Url_Repository_Interface;
+use LEAStudios\SiteAudit\Shared\Template_Renderer;
 
 /**
  * Owns the top-level "Site Audit" menu and three read-only views:
@@ -89,6 +90,13 @@ final class Dashboard_Controller {
 	private Email_Subscription_Repository_Interface $subscription_repository;
 
 	/**
+	 * Template renderer.
+	 *
+	 * @var Template_Renderer
+	 */
+	private Template_Renderer $template_renderer;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Project_Repository_Interface            $project_repository      Project repo.
@@ -98,6 +106,7 @@ final class Dashboard_Controller {
 	 * @param Dashboard_Statistics                    $statistics              Aggregator service.
 	 * @param Trend_Calculator                        $trend_calculator        Trend calculator.
 	 * @param Email_Subscription_Repository_Interface $subscription_repository Subscription repo (for the Subscribe button).
+	 * @param Template_Renderer                       $template_renderer       Renders dashboard partials.
 	 */
 	public function __construct(
 		Project_Repository_Interface $project_repository,
@@ -106,7 +115,8 @@ final class Dashboard_Controller {
 		Issue_Repository_Interface $issue_repository,
 		Dashboard_Statistics $statistics,
 		Trend_Calculator $trend_calculator,
-		Email_Subscription_Repository_Interface $subscription_repository
+		Email_Subscription_Repository_Interface $subscription_repository,
+		Template_Renderer $template_renderer
 	) {
 		$this->project_repository      = $project_repository;
 		$this->url_repository          = $url_repository;
@@ -115,6 +125,7 @@ final class Dashboard_Controller {
 		$this->statistics              = $statistics;
 		$this->trend_calculator        = $trend_calculator;
 		$this->subscription_repository = $subscription_repository;
+		$this->template_renderer       = $template_renderer;
 	}
 
 	/**
@@ -227,7 +238,7 @@ final class Dashboard_Controller {
 		$unassigned_audits  = $this->build_audits_by_url( $unassigned_urls );
 		$unassigned_summary = $this->statistics->calculate_summary( $unassigned_urls, $unassigned_audits );
 
-		$this->include_template(
+		$this->template_renderer->render(
 			'dashboard/index.php',
 			[
 				'project_cards'      => $project_cards,
@@ -273,7 +284,7 @@ final class Dashboard_Controller {
 			$is_subscribed = $this->subscription_repository->is_subscribed( $current_user, (int) $project->id() );
 		}
 
-		$this->include_template(
+		$this->template_renderer->render(
 			'dashboard/project.php',
 			[
 				'project'         => $project,
@@ -327,7 +338,7 @@ final class Dashboard_Controller {
 			$tab = 'desktop';
 		}
 
-		$this->include_template(
+		$this->template_renderer->render(
 			'dashboard/url.php',
 			[
 				'url'             => $url,
@@ -373,25 +384,5 @@ final class Dashboard_Controller {
 	 */
 	private function page_base_url(): string {
 		return add_query_arg( 'page', self::PARENT_SLUG, admin_url( 'admin.php' ) );
-	}
-
-	/**
-	 * Render a template partial with the given context variables in scope.
-	 *
-	 * @param string               $relative_path Path under `templates/`.
-	 * @param array<string, mixed> $context       Variables to extract.
-	 *
-	 * @return void
-	 */
-	private function include_template( string $relative_path, array $context ): void {
-		$file = LEASTUDIOS_SITEAUDIT_DIR . 'templates/' . $relative_path;
-
-		if ( ! file_exists( $file ) ) {
-			return;
-		}
-
-		// phpcs:ignore WordPress.PHP.DontExtract.extract_extract -- partials use bare names; admin-only context.
-		extract( $context, EXTR_SKIP );
-		include $file;
 	}
 }

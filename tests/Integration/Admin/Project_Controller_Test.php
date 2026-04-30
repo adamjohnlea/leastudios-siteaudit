@@ -14,6 +14,7 @@ use LEAStudios\SiteAudit\Capabilities;
 use LEAStudios\SiteAudit\Modules\Url\Admin\Project_Controller;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Project_Service;
 use LEAStudios\SiteAudit\Modules\Url\Infrastructure\Repositories\Wpdb_Project_Repository;
+use LEAStudios\SiteAudit\Shared\Template_Renderer;
 use LEAStudios\Tests\TestCase;
 
 final class Project_Controller_Test extends TestCase {
@@ -31,7 +32,10 @@ final class Project_Controller_Test extends TestCase {
 
 		$this->repository = new Wpdb_Project_Repository();
 		$service          = new Project_Service( $this->repository );
-		$this->controller = new Project_Controller( $service );
+		$this->controller = new Project_Controller(
+			$service,
+			new Template_Renderer( LEASTUDIOS_SITEAUDIT_DIR . 'templates' )
+		);
 
 		$admin_id = self::factory()->user->create( [ 'role' => 'administrator' ] );
 		wp_set_current_user( $admin_id );

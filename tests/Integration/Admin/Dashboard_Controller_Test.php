@@ -29,6 +29,7 @@ use LEAStudios\SiteAudit\Modules\Dashboard\Application\Services\Dashboard_Statis
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Project_Service;
 use LEAStudios\SiteAudit\Modules\Url\Infrastructure\Repositories\Wpdb_Project_Repository;
 use LEAStudios\SiteAudit\Modules\Url\Infrastructure\Repositories\Wpdb_Url_Repository;
+use LEAStudios\SiteAudit\Shared\Template_Renderer;
 use LEAStudios\Tests\TestCase;
 
 final class Dashboard_Controller_Test extends TestCase {
@@ -57,7 +58,8 @@ final class Dashboard_Controller_Test extends TestCase {
 			$issue_repository,
 			new Dashboard_Statistics(),
 			new Trend_Calculator(),
-			$subscription_repository
+			$subscription_repository,
+			new Template_Renderer( LEASTUDIOS_SITEAUDIT_DIR . 'templates' )
 		);
 
 		$this->settings_page = new Settings_Page();

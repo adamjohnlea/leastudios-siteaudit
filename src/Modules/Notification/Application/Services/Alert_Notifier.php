@@ -15,6 +15,7 @@ use LEAStudios\SiteAudit\Modules\Audit\Domain\Models\Audit;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Audit_Status;
 use LEAStudios\SiteAudit\Modules\Notification\Domain\Repositories\Email_Subscription_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Models\Url;
+use LEAStudios\SiteAudit\Shared\Template_Renderer;
 
 /**
  * Sends an alert email to project subscribers when an audit breaches a
@@ -47,17 +48,27 @@ final class Alert_Notifier {
 	private Email_Service_Interface $email_service;
 
 	/**
+	 * Template renderer.
+	 *
+	 * @var Template_Renderer
+	 */
+	private Template_Renderer $template_renderer;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Email_Subscription_Repository_Interface $subscription_repository Subscription repo.
 	 * @param Email_Service_Interface                 $email_service           Mail transport.
+	 * @param Template_Renderer                       $template_renderer       Renders the alert body partial.
 	 */
 	public function __construct(
 		Email_Subscription_Repository_Interface $subscription_repository,
-		Email_Service_Interface $email_service
+		Email_Service_Interface $email_service,
+		Template_Renderer $template_renderer
 	) {
 		$this->subscription_repository = $subscription_repository;
 		$this->email_service           = $email_service;
+		$this->template_renderer       = $template_renderer;
 	}
 
 	/**
@@ -107,7 +118,8 @@ final class Alert_Notifier {
 			$display_name
 		);
 
-		$body = $this->render_template(
+		$body = $this->template_renderer->render_to_string(
+			'emails/alert-score.php',
 			[
 				'url_name'                 => $display_name,
 				'url_address'              => $url->url()->value(),
@@ -169,24 +181,5 @@ final class Alert_Notifier {
 		}
 
 		return $worst;
-	}
-
-	/**
-	 * Render the alert email body partial with output buffering.
-	 *
-	 * @param array<string, mixed> $context Variables to extract.
-	 *
-	 * @return string
-	 */
-	private function render_template( array $context ): string {
-		$file = LEASTUDIOS_SITEAUDIT_DIR . 'templates/emails/alert-score.php';
-
-		ob_start();
-		// phpcs:ignore WordPress.PHP.DontExtract.extract_extract -- partials use bare names; admin-only context.
-		extract( $context, EXTR_SKIP );
-		include $file;
-		$html = ob_get_clean();
-
-		return false === $html ? '' : (string) $html;
 	}
 }

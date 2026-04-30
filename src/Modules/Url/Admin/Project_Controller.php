@@ -15,6 +15,7 @@ use LEAStudios\SiteAudit\Admin\Notice_Service;
 use LEAStudios\SiteAudit\Capabilities;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Project_Service;
 use LEAStudios\SiteAudit\Shared\Exceptions\Validation_Exception;
+use LEAStudios\SiteAudit\Shared\Template_Renderer;
 
 /**
  * Renders the Projects submenu and handles `admin-post.php` mutations.
@@ -41,12 +42,21 @@ final class Project_Controller {
 	private Project_Service $project_service;
 
 	/**
+	 * Template renderer.
+	 *
+	 * @var Template_Renderer
+	 */
+	private Template_Renderer $template_renderer;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param Project_Service $project_service Application service.
+	 * @param Project_Service   $project_service   Application service.
+	 * @param Template_Renderer $template_renderer Renders admin partials.
 	 */
-	public function __construct( Project_Service $project_service ) {
-		$this->project_service = $project_service;
+	public function __construct( Project_Service $project_service, Template_Renderer $template_renderer ) {
+		$this->project_service   = $project_service;
+		$this->template_renderer = $template_renderer;
 	}
 
 	/**
@@ -107,7 +117,7 @@ final class Project_Controller {
 				}
 			}
 
-			$this->include_template(
+			$this->template_renderer->render(
 				'projects/form.php',
 				[
 					'project'       => $project,
@@ -121,7 +131,7 @@ final class Project_Controller {
 		}
 
 		$projects = $this->project_service->find_all();
-		$this->include_template(
+		$this->template_renderer->render(
 			'projects/index.php',
 			[
 				'projects'      => $projects,
@@ -250,25 +260,5 @@ final class Project_Controller {
 	 */
 	private function list_url(): string {
 		return add_query_arg( 'page', self::PAGE_SLUG, admin_url( 'admin.php' ) );
-	}
-
-	/**
-	 * Render a template partial with extracted variables.
-	 *
-	 * @param string               $relative_path Path under `templates/`.
-	 * @param array<string, mixed> $context       Variables to extract into the partial scope.
-	 *
-	 * @return void
-	 */
-	private function include_template( string $relative_path, array $context ): void {
-		$file = LEASTUDIOS_SITEAUDIT_DIR . 'templates/' . $relative_path;
-
-		if ( ! file_exists( $file ) ) {
-			return;
-		}
-
-		// phpcs:ignore WordPress.PHP.DontExtract.extract_extract -- partials use bare names; admin-only context.
-		extract( $context, EXTR_SKIP );
-		include $file;
 	}
 }

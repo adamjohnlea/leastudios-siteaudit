@@ -23,6 +23,7 @@ use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Audit_Frequency;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Audit_Strategy;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Bulk_Import_Result;
 use LEAStudios\SiteAudit\Shared\Exceptions\Validation_Exception;
+use LEAStudios\SiteAudit\Shared\Template_Renderer;
 
 /**
  * Renders the URLs submenu and handles `admin-post.php` mutations.
@@ -84,6 +85,13 @@ final class Url_Controller {
 	private Audit_Repository_Interface $audit_repository;
 
 	/**
+	 * Template renderer.
+	 *
+	 * @var Template_Renderer
+	 */
+	private Template_Renderer $template_renderer;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param Url_Service                $url_service         URL application service.
@@ -91,19 +99,22 @@ final class Url_Controller {
 	 * @param Bulk_Import_Service        $bulk_import_service Bulk import service.
 	 * @param Action_Enqueuer_Interface  $enqueuer            Async action enqueuer (for run-audit dispatch).
 	 * @param Audit_Repository_Interface $audit_repository    Audit repository (for list score lookup).
+	 * @param Template_Renderer          $template_renderer   Renders admin partials.
 	 */
 	public function __construct(
 		Url_Service $url_service,
 		Project_Service $project_service,
 		Bulk_Import_Service $bulk_import_service,
 		Action_Enqueuer_Interface $enqueuer,
-		Audit_Repository_Interface $audit_repository
+		Audit_Repository_Interface $audit_repository,
+		Template_Renderer $template_renderer
 	) {
 		$this->url_service         = $url_service;
 		$this->project_service     = $project_service;
 		$this->bulk_import_service = $bulk_import_service;
 		$this->enqueuer            = $enqueuer;
 		$this->audit_repository    = $audit_repository;
+		$this->template_renderer   = $template_renderer;
 	}
 
 	/**
@@ -195,7 +206,7 @@ final class Url_Controller {
 			? []
 			: $this->audit_repository->find_latest_scores_by_url_ids( $url_ids );
 
-		$this->include_template(
+		$this->template_renderer->render(
 			'urls/index.php',
 			[
 				'urls'             => $urls,
@@ -242,7 +253,7 @@ final class Url_Controller {
 			}
 		}
 
-		$this->include_template(
+		$this->template_renderer->render(
 			'urls/form.php',
 			[
 				'url_model'        => $url,
@@ -268,7 +279,7 @@ final class Url_Controller {
 			wp_die( esc_html__( 'You do not have permission to manage URLs.', 'leastudios-siteaudit' ) );
 		}
 
-		$this->include_template(
+		$this->template_renderer->render(
 			'urls/bulk-import.php',
 			[
 				'projects'    => $this->project_service->find_all(),
@@ -308,7 +319,7 @@ final class Url_Controller {
 			exit;
 		}
 
-		$this->include_template(
+		$this->template_renderer->render(
 			'urls/bulk-import-result.php',
 			[
 				'result'          => $result,
@@ -727,25 +738,5 @@ final class Url_Controller {
 	 */
 	private function bulk_result_transient_key( string $token ): string {
 		return 'leastudios_siteaudit_bulk_import_' . $token;
-	}
-
-	/**
-	 * Render a template partial with extracted variables.
-	 *
-	 * @param string               $relative_path Path under `templates/`.
-	 * @param array<string, mixed> $context       Variables to extract into the partial scope.
-	 *
-	 * @return void
-	 */
-	private function include_template( string $relative_path, array $context ): void {
-		$file = LEASTUDIOS_SITEAUDIT_DIR . 'templates/' . $relative_path;
-
-		if ( ! file_exists( $file ) ) {
-			return;
-		}
-
-		// phpcs:ignore WordPress.PHP.DontExtract.extract_extract -- partials use bare names; admin-only context.
-		extract( $context, EXTR_SKIP );
-		include $file;
 	}
 }
