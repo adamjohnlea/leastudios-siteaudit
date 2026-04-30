@@ -78,23 +78,15 @@ final class Wp_Mail_Service implements Email_Service_Interface {
 	 * @return bool
 	 */
 	public function send_with_attachment( string $to, string $subject, string $body, string $attachment_bytes, string $attachment_filename ): bool {
-		$bytes_size = strlen( $attachment_bytes );
-		$this->diag( sprintf( 'send_with_attachment: to=%s subject="%s" filename=%s bytes=%d', $to, $subject, $attachment_filename, $bytes_size ) );
-
 		if ( '' === $attachment_bytes ) {
-			$this->diag( '  → 0-byte attachment, falling back to body-only send()' );
 			return $this->send( $to, $subject, $body );
 		}
 
 		$temp_file = $this->write_temp_file( $attachment_bytes, $attachment_filename );
 
 		if ( null === $temp_file ) {
-			$this->diag( '  → write_temp_file FAILED' );
 			return false;
 		}
-
-		$file_size = file_exists( $temp_file ) ? (int) filesize( $temp_file ) : -1;
-		$this->diag( sprintf( '  → wrote temp file: %s (%d bytes on disk)', $temp_file, $file_size ) );
 
 		// Use WordPress's `[display_name => path]` attachment form (added in
 		// WP 5.6). Without this, PHPMailer derives the attachment's display
@@ -105,35 +97,9 @@ final class Wp_Mail_Service implements Email_Service_Interface {
 		// silently stripped by Gmail / mail security gateways.
 		$result = wp_mail( $to, $subject, $body, $this->html_headers(), [ $attachment_filename => $temp_file ] );
 
-		$still_exists = file_exists( $temp_file );
-		$this->diag( sprintf( '  → wp_mail returned %s (file still on disk: %s)', $result ? 'true' : 'false', $still_exists ? 'yes' : 'no' ) );
-
 		$this->schedule_cleanup( $temp_file );
-		$this->diag( '  → cleanup scheduled' );
 
 		return (bool) $result;
-	}
-
-	/**
-	 * Always-on diagnostic logger that writes to a fixed file under uploads
-	 * regardless of `WP_DEBUG_LOG`. Temporary instrumentation for tracing
-	 * the missing-attachment bug; can be removed once the cause is known.
-	 *
-	 * @param string $line Message.
-	 *
-	 * @return void
-	 */
-	private function diag( string $line ): void {
-		$upload_dir = wp_upload_dir();
-		if ( empty( $upload_dir['basedir'] ) ) {
-			return;
-		}
-
-		$path  = trailingslashit( $upload_dir['basedir'] ) . 'leastudios-siteaudit-mail.log';
-		$entry = '[' . wp_date( 'Y-m-d H:i:s' ) . '] ' . $line . "\n";
-
-		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- targeted diagnostic file write.
-		@file_put_contents( $path, $entry, FILE_APPEND );
 	}
 
 	/**
@@ -148,16 +114,13 @@ final class Wp_Mail_Service implements Email_Service_Interface {
 	 */
 	public function cleanup_attachment( string $path ): void {
 		if ( ! str_contains( $path, self::TEMP_SUBDIR ) ) {
-			$this->diag( sprintf( 'cleanup_attachment: REFUSED (path outside tmp subdir): %s', $path ) );
 			return;
 		}
 
-		$existed = file_exists( $path );
-		if ( $existed ) {
+		if ( file_exists( $path ) ) {
 			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.unlink_unlink -- best-effort cleanup; the file may already be gone.
 			@unlink( $path );
 		}
-		$this->diag( sprintf( 'cleanup_attachment: %s (existed: %s)', $path, $existed ? 'yes' : 'no' ) );
 	}
 
 	/**
