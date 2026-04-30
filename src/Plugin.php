@@ -16,12 +16,8 @@ use LEAStudios\SiteAudit\Admin\Settings_Page;
 use LEAStudios\SiteAudit\Database\Migration;
 use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Audit_Pipeline;
 use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Audit_Service;
-use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Audit_Service_Interface;
 use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Comparison_Service;
 use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Trend_Calculator;
-use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Audit_Comparison_Repository_Interface;
-use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Audit_Repository_Interface;
-use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Issue_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Audit\Infrastructure\Api\PageSpeed_Api_Client;
 use LEAStudios\SiteAudit\Modules\Audit\Infrastructure\Api\Wp_Http_Client;
 use LEAStudios\SiteAudit\Modules\Audit\Infrastructure\RateLimiting\Retry_Strategy;
@@ -40,7 +36,6 @@ use LEAStudios\SiteAudit\Modules\Reporting\Admin\Reporting_Controller;
 use LEAStudios\SiteAudit\Modules\Reporting\Application\Services\Csv_Export_Service;
 use LEAStudios\SiteAudit\Modules\Reporting\Application\Services\Pdf_Report_Data_Collector;
 use LEAStudios\SiteAudit\Modules\Reporting\Application\Services\Pdf_Report_Service;
-use LEAStudios\SiteAudit\Modules\Scheduler\Application\Services\Action_Enqueuer_Interface;
 use LEAStudios\SiteAudit\Modules\Scheduler\Application\Services\Audit_Worker;
 use LEAStudios\SiteAudit\Modules\Scheduler\Application\Services\Frequency_Interval;
 use LEAStudios\SiteAudit\Modules\Scheduler\Application\Services\Tick_Dispatcher;
@@ -50,10 +45,9 @@ use LEAStudios\SiteAudit\Modules\Url\Admin\Url_Controller;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Bulk_Import_Service;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Project_Service;
 use LEAStudios\SiteAudit\Modules\Url\Application\Services\Url_Service;
-use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Project_Repository_Interface;
-use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Url_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Url\Infrastructure\Repositories\Wpdb_Project_Repository;
 use LEAStudios\SiteAudit\Modules\Url\Infrastructure\Repositories\Wpdb_Url_Repository;
+use LEAStudios\SiteAudit\Shared\Container;
 use LEAStudios\SiteAudit\Shared\Template_Renderer;
 
 /**
@@ -62,6 +56,15 @@ use LEAStudios\SiteAudit\Shared\Template_Renderer;
 final class Plugin {
 
 	public const TICK_HOOK = 'leastudios_siteaudit_tick';
+
+	/**
+	 * Service container, populated once in init() and consumed by the
+	 * register_scheduler_hooks / register_notification_hooks / init_admin
+	 * helpers below.
+	 *
+	 * @var Container
+	 */
+	private Container $container;
 
 	/**
 	 * Initialize the plugin.
@@ -80,62 +83,24 @@ final class Plugin {
 
 		( new Migration() )->maybe_migrate();
 
-		$project_repository    = new Wpdb_Project_Repository();
-		$url_repository        = new Wpdb_Url_Repository();
-		$audit_repository      = new Wpdb_Audit_Repository();
-		$issue_repository      = new Wpdb_Issue_Repository();
-		$comparison_repository = new Wpdb_Audit_Comparison_Repository();
-
-		$audit_service = $this->build_audit_service(
-			$url_repository,
-			$audit_repository,
-			$issue_repository,
-			$comparison_repository
-		);
-
-		$enqueuer                = new As_Action_Enqueuer();
-		$subscription_repository = new Wpdb_Email_Subscription_Repository();
-		$email_service           = new Wp_Mail_Service();
+		$this->container = new Container();
+		$this->register_services( $this->container );
 
 		// Register WP privacy exporter/eraser callbacks for the
 		// email_subscriptions table (the only PII surface we own).
 		( new Privacy_Hooks() )->register();
-		$statistics         = new Dashboard_Statistics();
-		$pdf_data_collector = new Pdf_Report_Data_Collector(
-			$url_repository,
-			$audit_repository,
-			$issue_repository,
-			$statistics
-		);
-		$pdf_report_service = new Pdf_Report_Service();
 
 		// Scheduler hooks fire on Action Scheduler's own loopback requests
 		// (which are not admin context), so wire them up unconditionally.
-		$this->register_scheduler_hooks( $url_repository, $audit_service, $enqueuer );
+		$this->register_scheduler_hooks( $this->container );
 
 		// Notification hooks fire on every successful audit, including those
 		// running in the Action Scheduler worker (non-admin context). Wire
 		// unconditionally for the same reason.
-		$this->register_notification_hooks(
-			$project_repository,
-			$subscription_repository,
-			$pdf_data_collector,
-			$pdf_report_service,
-			$email_service
-		);
+		$this->register_notification_hooks( $this->container );
 
 		if ( is_admin() ) {
-			$this->init_admin(
-				$project_repository,
-				$url_repository,
-				$audit_repository,
-				$issue_repository,
-				$statistics,
-				$pdf_data_collector,
-				$pdf_report_service,
-				$subscription_repository,
-				$enqueuer
-			);
+			$this->init_admin( $this->container );
 		}
 	}
 
@@ -184,21 +149,124 @@ final class Plugin {
 	}
 
 	/**
-	 * Wire the recurring-tick and per-URL audit hooks to their handlers.
+	 * Register every service factory on the container. Each `set()` is a
+	 * lazy closure — services are constructed on first `get()` and cached.
 	 *
-	 * @param Url_Repository_Interface  $url_repository URL repo.
-	 * @param Audit_Service_Interface   $audit_service  Audit application service.
-	 * @param Action_Enqueuer_Interface $enqueuer       Async action enqueuer.
+	 * @param Container $c Container to populate.
 	 *
 	 * @return void
 	 */
-	private function register_scheduler_hooks(
-		Url_Repository_Interface $url_repository,
-		Audit_Service_Interface $audit_service,
-		Action_Enqueuer_Interface $enqueuer
-	): void {
-		$dispatcher = new Tick_Dispatcher( $url_repository, $enqueuer, new Frequency_Interval() );
-		$worker     = new Audit_Worker( $audit_service );
+	private function register_services( Container $c ): void {
+		// Repositories.
+		$c->set( 'project_repository', static fn() => new Wpdb_Project_Repository() );
+		$c->set( 'url_repository', static fn() => new Wpdb_Url_Repository() );
+		$c->set( 'audit_repository', static fn() => new Wpdb_Audit_Repository() );
+		$c->set( 'issue_repository', static fn() => new Wpdb_Issue_Repository() );
+		$c->set( 'comparison_repository', static fn() => new Wpdb_Audit_Comparison_Repository() );
+		$c->set( 'subscription_repository', static fn() => new Wpdb_Email_Subscription_Repository() );
+
+		// Domain services.
+		$c->set( 'statistics', static fn() => new Dashboard_Statistics() );
+		$c->set( 'trend_calculator', static fn() => new Trend_Calculator() );
+		$c->set( 'comparison_service', static fn() => new Comparison_Service() );
+		$c->set( 'csv_export_service', static fn() => new Csv_Export_Service() );
+
+		// Infrastructure.
+		$c->set( 'enqueuer', static fn() => new As_Action_Enqueuer() );
+		$c->set( 'email_service', static fn() => new Wp_Mail_Service() );
+		$c->set( 'pdf_report_service', static fn() => new Pdf_Report_Service() );
+		$c->set(
+			'template_renderer',
+			static fn() => new Template_Renderer( LEASTUDIOS_SITEAUDIT_DIR . 'templates' )
+		);
+
+		// Composite services with dependencies.
+		$c->set(
+			'pdf_data_collector',
+			static fn( Container $c ) => new Pdf_Report_Data_Collector(
+				$c->get( 'url_repository' ),
+				$c->get( 'audit_repository' ),
+				$c->get( 'issue_repository' ),
+				$c->get( 'statistics' )
+			)
+		);
+
+		// Audit pipeline + service.
+		$c->set(
+			'audit_pipeline',
+			static function ( Container $c ): Audit_Pipeline {
+				$defaults = Activation::default_options();
+				$stored   = get_option( Settings_Page::OPTION_NAME, $defaults );
+				$options  = is_array( $stored ) ? array_merge( $defaults, $stored ) : $defaults;
+
+				$api_key     = (string) ( $options['pagespeed_api_key'] ?? '' );
+				$retry_count = (int) ( $options['pagespeed_retry_count'] ?? 3 );
+
+				return new Audit_Pipeline(
+					$c->get( 'audit_repository' ),
+					$c->get( 'issue_repository' ),
+					new PageSpeed_Api_Client( new Wp_Http_Client(), $api_key ),
+					new Retry_Strategy( $retry_count ),
+					$c->get( 'comparison_service' ),
+					$c->get( 'comparison_repository' )
+				);
+			}
+		);
+		$c->set(
+			'audit_service',
+			static fn( Container $c ) => new Audit_Service(
+				$c->get( 'url_repository' ),
+				$c->get( 'audit_repository' ),
+				$c->get( 'audit_pipeline' )
+			)
+		);
+
+		// Notifiers.
+		$c->set(
+			'alert_notifier',
+			static fn( Container $c ) => new Alert_Notifier(
+				$c->get( 'subscription_repository' ),
+				$c->get( 'email_service' ),
+				$c->get( 'template_renderer' )
+			)
+		);
+		$c->set(
+			'report_notifier',
+			static fn( Container $c ) => new Audit_Report_Notifier(
+				$c->get( 'project_repository' ),
+				$c->get( 'subscription_repository' ),
+				$c->get( 'pdf_data_collector' ),
+				$c->get( 'pdf_report_service' ),
+				$c->get( 'email_service' ),
+				$c->get( 'template_renderer' )
+			)
+		);
+
+		// Application services (admin-side).
+		$c->set(
+			'project_service',
+			static fn( Container $c ) => new Project_Service( $c->get( 'project_repository' ) )
+		);
+		$c->set(
+			'url_service',
+			static fn( Container $c ) => new Url_Service( $c->get( 'url_repository' ) )
+		);
+		$c->set(
+			'bulk_import_service',
+			static fn( Container $c ) => new Bulk_Import_Service( $c->get( 'url_repository' ) )
+		);
+	}
+
+	/**
+	 * Wire the recurring-tick and per-URL audit hooks to their handlers.
+	 *
+	 * @param Container $c Service container.
+	 *
+	 * @return void
+	 */
+	private function register_scheduler_hooks( Container $c ): void {
+		$dispatcher = new Tick_Dispatcher( $c->get( 'url_repository' ), $c->get( 'enqueuer' ), new Frequency_Interval() );
+		$worker     = new Audit_Worker( $c->get( 'audit_service' ) );
 
 		add_action(
 			self::TICK_HOOK,
@@ -222,42 +290,21 @@ final class Plugin {
 	 * action. Fires unconditionally because the worker that emits the action
 	 * runs in non-admin context (Action Scheduler loopback request).
 	 *
-	 * @param Project_Repository_Interface       $project_repository      Project repo.
-	 * @param Wpdb_Email_Subscription_Repository $subscription_repository Subscription repo.
-	 * @param Pdf_Report_Data_Collector          $pdf_data_collector      PDF data collector.
-	 * @param Pdf_Report_Service                 $pdf_report_service      PDF rendering service.
-	 * @param Wp_Mail_Service                    $email_service           Mail transport.
+	 * @param Container $c Service container.
 	 *
 	 * @return void
 	 */
-	private function register_notification_hooks(
-		Project_Repository_Interface $project_repository,
-		Wpdb_Email_Subscription_Repository $subscription_repository,
-		Pdf_Report_Data_Collector $pdf_data_collector,
-		Pdf_Report_Service $pdf_report_service,
-		Wp_Mail_Service $email_service
-	): void {
-		$template_renderer = new Template_Renderer( LEASTUDIOS_SITEAUDIT_DIR . 'templates' );
-		$alert_notifier    = new Alert_Notifier( $subscription_repository, $email_service, $template_renderer );
-		$report_notifier   = new Audit_Report_Notifier(
-			$project_repository,
-			$subscription_repository,
-			$pdf_data_collector,
-			$pdf_report_service,
-			$email_service,
-			$template_renderer
-		);
-
+	private function register_notification_hooks( Container $c ): void {
 		add_action(
 			'leastudios_siteaudit_audit_completed',
-			[ $alert_notifier, 'notify_if_threshold_breached' ],
+			[ $c->get( 'alert_notifier' ), 'notify_if_threshold_breached' ],
 			10,
 			3
 		);
 
 		add_action(
 			'leastudios_siteaudit_audit_completed',
-			[ $report_notifier, 'on_audit_completed' ],
+			[ $c->get( 'report_notifier' ), 'on_audit_completed' ],
 			10,
 			3
 		);
@@ -265,7 +312,7 @@ final class Plugin {
 		// Deferred cleanup of attachment temp files (see Wp_Mail_Service for why).
 		add_action(
 			Wp_Mail_Service::CLEANUP_HOOK,
-			[ $email_service, 'cleanup_attachment' ],
+			[ $c->get( 'email_service' ), 'cleanup_attachment' ],
 			10,
 			1
 		);
@@ -274,106 +321,49 @@ final class Plugin {
 	/**
 	 * Initialize admin-specific functionality.
 	 *
-	 * @param Wpdb_Project_Repository            $project_repository      Project repo.
-	 * @param Wpdb_Url_Repository                $url_repository          URL repo.
-	 * @param Wpdb_Audit_Repository              $audit_repository        Audit repo.
-	 * @param Wpdb_Issue_Repository              $issue_repository        Issue repo.
-	 * @param Dashboard_Statistics               $statistics              Stats service.
-	 * @param Pdf_Report_Data_Collector          $pdf_data_collector      PDF data collector.
-	 * @param Pdf_Report_Service                 $pdf_report_service      PDF rendering service.
-	 * @param Wpdb_Email_Subscription_Repository $subscription_repository Subscription repo.
-	 * @param Action_Enqueuer_Interface          $enqueuer                Async action enqueuer for "Run audit now".
+	 * @param Container $c Service container.
 	 *
 	 * @return void
 	 */
-	private function init_admin(
-		Wpdb_Project_Repository $project_repository,
-		Wpdb_Url_Repository $url_repository,
-		Wpdb_Audit_Repository $audit_repository,
-		Wpdb_Issue_Repository $issue_repository,
-		Dashboard_Statistics $statistics,
-		Pdf_Report_Data_Collector $pdf_data_collector,
-		Pdf_Report_Service $pdf_report_service,
-		Wpdb_Email_Subscription_Repository $subscription_repository,
-		Action_Enqueuer_Interface $enqueuer
-	): void {
+	private function init_admin( Container $c ): void {
 		( new Settings_Page() )->init();
 		( new Api_Key_Notice() )->init();
 
-		$project_service     = new Project_Service( $project_repository );
-		$url_service         = new Url_Service( $url_repository );
-		$bulk_import_service = new Bulk_Import_Service( $url_repository );
-		$template_renderer   = new Template_Renderer( LEASTUDIOS_SITEAUDIT_DIR . 'templates' );
-
 		( new Dashboard_Controller(
-			$project_repository,
-			$url_repository,
-			$audit_repository,
-			$issue_repository,
-			$statistics,
-			new Trend_Calculator(),
-			$subscription_repository,
-			$template_renderer
+			$c->get( 'project_repository' ),
+			$c->get( 'url_repository' ),
+			$c->get( 'audit_repository' ),
+			$c->get( 'issue_repository' ),
+			$c->get( 'statistics' ),
+			$c->get( 'trend_calculator' ),
+			$c->get( 'subscription_repository' ),
+			$c->get( 'template_renderer' )
 		) )->init();
 
-		( new Project_Controller( $project_service, $template_renderer ) )->init();
+		( new Project_Controller( $c->get( 'project_service' ), $c->get( 'template_renderer' ) ) )->init();
+
 		( new Url_Controller(
-			$url_service,
-			$project_service,
-			$bulk_import_service,
-			$enqueuer,
-			$audit_repository,
-			$template_renderer
+			$c->get( 'url_service' ),
+			$c->get( 'project_service' ),
+			$c->get( 'bulk_import_service' ),
+			$c->get( 'enqueuer' ),
+			$c->get( 'audit_repository' ),
+			$c->get( 'template_renderer' )
 		) )->init();
 
 		( new Reporting_Controller(
-			$project_repository,
-			$url_repository,
-			$audit_repository,
-			$statistics,
-			new Csv_Export_Service(),
-			$pdf_data_collector,
-			$pdf_report_service
+			$c->get( 'project_repository' ),
+			$c->get( 'url_repository' ),
+			$c->get( 'audit_repository' ),
+			$c->get( 'statistics' ),
+			$c->get( 'csv_export_service' ),
+			$c->get( 'pdf_data_collector' ),
+			$c->get( 'pdf_report_service' )
 		) )->init();
 
 		( new Subscription_Controller(
-			$project_repository,
-			$subscription_repository
+			$c->get( 'project_repository' ),
+			$c->get( 'subscription_repository' )
 		) )->init();
-	}
-
-	/**
-	 * Assemble the audit pipeline (HTTP + PageSpeed client + retry + service).
-	 *
-	 * @param Url_Repository_Interface              $url_repository        URL repo.
-	 * @param Audit_Repository_Interface            $audit_repository      Audit repo.
-	 * @param Issue_Repository_Interface            $issue_repository      Issue repo.
-	 * @param Audit_Comparison_Repository_Interface $comparison_repository Comparison repo.
-	 *
-	 * @return Audit_Service
-	 */
-	private function build_audit_service(
-		Url_Repository_Interface $url_repository,
-		Audit_Repository_Interface $audit_repository,
-		Issue_Repository_Interface $issue_repository,
-		Audit_Comparison_Repository_Interface $comparison_repository
-	): Audit_Service {
-		$defaults = Activation::default_options();
-		$stored   = get_option( Settings_Page::OPTION_NAME, $defaults );
-		$options  = is_array( $stored ) ? array_merge( $defaults, $stored ) : $defaults;
-
-		$api_key     = (string) ( $options['pagespeed_api_key'] ?? '' );
-		$retry_count = (int) ( $options['pagespeed_retry_count'] ?? 3 );
-
-		$pipeline = new Audit_Pipeline(
-			$audit_repository,
-			$issue_repository,
-			new PageSpeed_Api_Client( new Wp_Http_Client(), $api_key ),
-			new Retry_Strategy( $retry_count ),
-			new Comparison_Service(),
-			$comparison_repository
-		);
-
-		return new Audit_Service( $url_repository, $audit_repository, $pipeline );
 	}
 }
