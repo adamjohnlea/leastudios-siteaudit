@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Models\Project;
 use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Project_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Project_Name;
+use LEAStudios\SiteAudit\Shared\Datetime_Util;
 use LEAStudios\SiteAudit\Shared\Exceptions\Validation_Exception;
 
 /**
@@ -58,7 +59,7 @@ final class Project_Service {
 			throw new Validation_Exception( 'A project with this name already exists' );
 		}
 
-		$now = \LEAStudios\SiteAudit\Shared\Datetime_Util::now();
+		$now = Datetime_Util::now();
 
 		$project = new Project(
 			null,
@@ -102,7 +103,7 @@ final class Project_Service {
 			$project->set_description( '' !== $description ? $description : null );
 		}
 
-		$project->set_updated_at( \LEAStudios\SiteAudit\Shared\Datetime_Util::now() );
+		$project->set_updated_at( Datetime_Util::now() );
 
 		return $this->project_repository->update( $project );
 	}

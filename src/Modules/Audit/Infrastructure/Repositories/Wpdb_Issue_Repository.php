@@ -16,6 +16,7 @@ use LEAStudios\SiteAudit\Modules\Audit\Domain\Models\Issue;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Issue_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Issue_Category;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Issue_Severity;
+use LEAStudios\SiteAudit\Shared\Datetime_Util;
 
 /**
  * Implements {@see Issue_Repository_Interface} on top of `$wpdb`.
@@ -194,7 +195,7 @@ final class Wpdb_Issue_Repository implements Issue_Repository_Interface {
 			(string) $row['description'],
 			null !== $row['element_selector'] ? (string) $row['element_selector'] : null,
 			null !== $row['help_url'] ? (string) $row['help_url'] : null,
-			\LEAStudios\SiteAudit\Shared\Datetime_Util::from_mysql( (string) $row['created_at'] ),
+			Datetime_Util::from_mysql( (string) $row['created_at'] ),
 			null !== $row['title'] ? (string) $row['title'] : null,
 		);
 	}

@@ -30,6 +30,7 @@ use LEAStudios\SiteAudit\Modules\Audit\Infrastructure\Repositories\Wpdb_Issue_Re
 use LEAStudios\SiteAudit\Modules\Dashboard\Admin\Dashboard_Controller;
 use LEAStudios\SiteAudit\Modules\Dashboard\Application\Services\Dashboard_Statistics;
 use LEAStudios\SiteAudit\Modules\Notification\Admin\Subscription_Controller;
+use LEAStudios\SiteAudit\Modules\Notification\Application\Privacy_Hooks;
 use LEAStudios\SiteAudit\Modules\Notification\Application\Services\Alert_Notifier;
 use LEAStudios\SiteAudit\Modules\Notification\Application\Services\Audit_Report_Notifier;
 use LEAStudios\SiteAudit\Modules\Notification\Application\Services\Wp_Mail_Service;
@@ -93,14 +94,18 @@ final class Plugin {
 		$enqueuer                = new As_Action_Enqueuer();
 		$subscription_repository = new Wpdb_Email_Subscription_Repository();
 		$email_service           = new Wp_Mail_Service();
-		$statistics              = new Dashboard_Statistics();
-		$pdf_data_collector      = new Pdf_Report_Data_Collector(
+
+		// Register WP privacy exporter/eraser callbacks for the
+		// email_subscriptions table (the only PII surface we own).
+		( new Privacy_Hooks() )->register();
+		$statistics         = new Dashboard_Statistics();
+		$pdf_data_collector = new Pdf_Report_Data_Collector(
 			$url_repository,
 			$audit_repository,
 			$issue_repository,
 			$statistics
 		);
-		$pdf_report_service      = new Pdf_Report_Service();
+		$pdf_report_service = new Pdf_Report_Service();
 
 		// Scheduler hooks fire on Action Scheduler's own loopback requests
 		// (which are not admin context), so wire them up unconditionally.
@@ -155,15 +160,25 @@ final class Plugin {
 	 * @return void
 	 */
 	public function register_recurring_tick(): void {
+		// Once we've confirmed the recurring action is scheduled, cache the
+		// affirmative for an hour so we skip the AS lookup on every page
+		// load. We re-check on a 1h window so a manually-cleared schedule
+		// gets healed in at most an hour.
+		if ( false !== get_transient( 'leastudios_siteaudit_tick_scheduled' ) ) {
+			return;
+		}
+
 		if ( ! function_exists( 'as_has_scheduled_action' ) || ! function_exists( 'as_schedule_recurring_action' ) ) {
 			return;
 		}
 
 		if ( as_has_scheduled_action( self::TICK_HOOK ) ) {
+			set_transient( 'leastudios_siteaudit_tick_scheduled', 1, HOUR_IN_SECONDS );
 			return;
 		}
 
 		as_schedule_recurring_action( time(), HOUR_IN_SECONDS, self::TICK_HOOK, [], 'leastudios-siteaudit' );
+		set_transient( 'leastudios_siteaudit_tick_scheduled', 1, HOUR_IN_SECONDS );
 	}
 
 	/**

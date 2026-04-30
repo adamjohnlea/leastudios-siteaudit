@@ -16,6 +16,7 @@ use LEAStudios\SiteAudit\Modules\Audit\Domain\Models\Audit_Comparison;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Audit_Comparison_Repository_Interface;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Score_Delta;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Trend;
+use LEAStudios\SiteAudit\Shared\Datetime_Util;
 
 /**
  * Implements {@see Audit_Comparison_Repository_Interface} on top of `$wpdb`.
@@ -154,7 +155,7 @@ final class Wpdb_Audit_Comparison_Repository implements Audit_Comparison_Reposit
 			(int) $row['resolved_issues_count'],
 			(int) $row['persistent_issues_count'],
 			Trend::from( (string) $row['trend'] ),
-			\LEAStudios\SiteAudit\Shared\Datetime_Util::from_mysql( (string) $row['created_at'] ),
+			Datetime_Util::from_mysql( (string) $row['created_at'] ),
 		);
 	}
 }

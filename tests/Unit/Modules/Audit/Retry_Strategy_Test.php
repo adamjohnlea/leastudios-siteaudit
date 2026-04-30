@@ -35,7 +35,10 @@ final class Retry_Strategy_Test extends TestCase {
 	}
 
 	public function test_get_delay_returns_exponential_backoff(): void {
-		$strategy = new Retry_Strategy( max_retries: 5, base_delay_ms: 1000 );
+		// Pass an explicit large max so the test demonstrates the
+		// exponential pattern below the cap regardless of the runtime
+		// default (which was lowered to 5s to avoid blocking AS workers).
+		$strategy = new Retry_Strategy( max_retries: 5, base_delay_ms: 1000, max_delay_ms: 30000 );
 
 		$this->assertSame( 1000, $strategy->delay_ms( 0 ) );
 		$this->assertSame( 2000, $strategy->delay_ms( 1 ) );

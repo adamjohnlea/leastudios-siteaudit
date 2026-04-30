@@ -45,6 +45,8 @@ final class Url_Controller {
 
 	private const PER_PAGE                = 20;
 	private const BULK_RESULT_TTL_SECONDS = 300;
+	/** Cap on uploaded CSV size — bulk URL imports in practice fit in tens of KB. */
+	private const CSV_MAX_BYTES = 5 * 1024 * 1024;
 
 	/**
 	 * URL application service.
@@ -291,15 +293,20 @@ final class Url_Controller {
 			exit;
 		}
 
-		$key    = $this->bulk_result_transient_key( $token );
-		$result = get_transient( $key );
+		$key = $this->bulk_result_transient_key( $token );
+		// Delete-then-validate: claim the token immediately so two concurrent
+		// reads from the same browser tab cannot both succeed. Whichever
+		// request claims it gets the data; the other sees nothing and
+		// redirects to the list view.
+		$cached = get_transient( $key );
+		delete_transient( $key );
 
-		if ( ! $result instanceof Bulk_Import_Result ) {
+		$result = $this->bulk_result_from_cache( $cached );
+
+		if ( null === $result ) {
 			wp_safe_redirect( $this->list_url() );
 			exit;
 		}
-
-		delete_transient( $key );
 
 		$this->include_template(
 			'urls/bulk-import-result.php',
@@ -308,6 +315,33 @@ final class Url_Controller {
 				'list_url'        => $this->list_url(),
 				'bulk_import_url' => add_query_arg( 'action', 'bulk-import', $this->list_url() ),
 			]
+		);
+	}
+
+	/**
+	 * Reconstruct a Bulk_Import_Result from its cached primitive-array form.
+	 *
+	 * Storing the value object directly in a transient serializes a class
+	 * with version-coupled identity, so a future class rename or upgrade
+	 * could leave already-issued tokens unreadable. We persist as a plain
+	 * array and rebuild the VO at read time.
+	 *
+	 * @param mixed $cached The transient payload.
+	 * @return Bulk_Import_Result|null
+	 */
+	private function bulk_result_from_cache( mixed $cached ): ?Bulk_Import_Result {
+		if ( ! is_array( $cached ) ) {
+			return null;
+		}
+
+		if ( ! isset( $cached['imported_count'], $cached['skipped_count'], $cached['errors'] ) || ! is_array( $cached['errors'] ) ) {
+			return null;
+		}
+
+		return new Bulk_Import_Result(
+			(int) $cached['imported_count'],
+			(int) $cached['skipped_count'],
+			$cached['errors']
 		);
 	}
 
@@ -460,8 +494,36 @@ final class Url_Controller {
 				exit;
 			}
 
-			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- file path read with WP_Filesystem below; nonce verified in guard_post().
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.NonceVerification.Missing -- file path validated as a real upload below; nonce verified in guard_post().
 			$tmp_name = (string) $_FILES['csv_file']['tmp_name'];
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- $_FILES['size'] is integer-cast immediately; nonce verified in guard_post().
+			$file_size = (int) ( $_FILES['csv_file']['size'] ?? 0 );
+
+			// Reject anything that isn't a genuine multipart upload — guards
+			// against an attacker hijacking the field to point WP_Filesystem
+			// at an arbitrary on-disk path (e.g. wp-config.php).
+			if ( ! is_uploaded_file( $tmp_name ) ) {
+				Notice_Service::enqueue( 'error', __( 'The uploaded file was not received correctly. Please try again.', 'leastudios-siteaudit' ) );
+				wp_safe_redirect( add_query_arg( 'action', 'bulk-import', $this->list_url() ) );
+				exit;
+			}
+
+			// Cap import size at 5 MB. Bulk imports of accessibility URLs
+			// in practice fit in tens of KB; refusing larger files prevents
+			// memory blow-ups when get_contents() loads the whole file.
+			if ( $file_size > self::CSV_MAX_BYTES ) {
+				Notice_Service::enqueue(
+					'error',
+					sprintf(
+						/* translators: %s: maximum size in megabytes. */
+						__( 'CSV file too large. Maximum size is %s MB.', 'leastudios-siteaudit' ),
+						(string) ( self::CSV_MAX_BYTES / ( 1024 * 1024 ) )
+					)
+				);
+				wp_safe_redirect( add_query_arg( 'action', 'bulk-import', $this->list_url() ) );
+				exit;
+			}
+
 			$contents = $this->read_uploaded_file( $tmp_name );
 
 			if ( null === $contents ) {
@@ -485,7 +547,15 @@ final class Url_Controller {
 		}
 
 		$token = wp_generate_password( 16, false );
-		set_transient( $this->bulk_result_transient_key( $token ), $result, self::BULK_RESULT_TTL_SECONDS );
+		set_transient(
+			$this->bulk_result_transient_key( $token ),
+			[
+				'imported_count' => $result->imported_count,
+				'skipped_count'  => $result->skipped_count,
+				'errors'         => $result->errors,
+			],
+			self::BULK_RESULT_TTL_SECONDS
+		);
 
 		wp_safe_redirect(
 			add_query_arg(

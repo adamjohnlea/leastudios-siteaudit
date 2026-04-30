@@ -17,6 +17,7 @@ use LEAStudios\SiteAudit\Modules\Url\Domain\Repositories\Url_Repository_Interfac
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Audit_Frequency;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Audit_Strategy;
 use LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Url_Address;
+use LEAStudios\SiteAudit\Shared\Datetime_Util;
 
 /**
  * Implements {@see Url_Repository_Interface} on top of `$wpdb`.
@@ -168,15 +169,45 @@ final class Wpdb_Url_Repository implements Url_Repository_Interface {
 	}
 
 	/**
-	 * Delete a URL by primary key.
+	 * Delete a URL by primary key, cascading to every dependent row.
+	 *
+	 * Cross-table referential integrity is enforced in PHP because dbDelta
+	 * strips foreign-key declarations. We delete child rows in
+	 * dependency order — issues + audit_comparisons (which point at audits),
+	 * then notifications + audits (which point at urls), then the url itself —
+	 * inside a transaction so a partial delete cannot leave orphans behind
+	 * (note: MyISAM ignores transactions; on InnoDB we get atomicity).
 	 *
 	 * @param int $id URL id.
 	 *
 	 * @return void
 	 */
 	public function delete( int $id ): void {
+		$audits            = Schema::table( Schema::TABLE_AUDITS );
+		$issues            = Schema::table( Schema::TABLE_ISSUES );
+		$audit_comparisons = Schema::table( Schema::TABLE_AUDIT_COMPARISONS );
+		$notifications     = Schema::table( Schema::TABLE_NOTIFICATIONS );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		$this->wpdb->query( 'START TRANSACTION' );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		$this->wpdb->query( $this->wpdb->prepare( "DELETE i FROM `{$issues}` AS i INNER JOIN `{$audits}` AS a ON i.audit_id = a.id WHERE a.url_id = %d", $id ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		$this->wpdb->query( $this->wpdb->prepare( "DELETE c FROM `{$audit_comparisons}` AS c INNER JOIN `{$audits}` AS a ON c.current_audit_id = a.id OR c.previous_audit_id = a.id WHERE a.url_id = %d", $id ) );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$this->wpdb->delete( $notifications, [ 'url_id' => $id ], [ '%d' ] );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$this->wpdb->delete( $audits, [ 'url_id' => $id ], [ '%d' ] );
+
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$this->wpdb->delete( $this->table, [ 'id' => $id ], [ '%d' ] );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		$this->wpdb->query( 'COMMIT' );
 	}
 
 	/**
@@ -337,9 +368,9 @@ final class Wpdb_Url_Repository implements Url_Repository_Interface {
 			(bool) $row['alerts_enabled'],
 			null !== $row['alert_threshold_score'] ? (int) $row['alert_threshold_score'] : null,
 			null !== $row['alert_threshold_drop'] ? (int) $row['alert_threshold_drop'] : null,
-			null !== $row['last_audited_at'] ? \LEAStudios\SiteAudit\Shared\Datetime_Util::from_mysql( (string) $row['last_audited_at'] ) : null,
-			\LEAStudios\SiteAudit\Shared\Datetime_Util::from_mysql( (string) $row['created_at'] ),
-			\LEAStudios\SiteAudit\Shared\Datetime_Util::from_mysql( (string) $row['updated_at'] ),
+			null !== $row['last_audited_at'] ? Datetime_Util::from_mysql( (string) $row['last_audited_at'] ) : null,
+			Datetime_Util::from_mysql( (string) $row['created_at'] ),
+			Datetime_Util::from_mysql( (string) $row['updated_at'] ),
 		);
 	}
 }

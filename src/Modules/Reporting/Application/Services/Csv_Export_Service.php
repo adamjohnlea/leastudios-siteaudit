@@ -55,10 +55,10 @@ final class Csv_Export_Service {
 			$lines[] = implode(
 				',',
 				[
-					Datetime_Util::format_for_display( $audit->audit_date(), 'Y-m-d H:i:s' ),
-					(string) $score,
-					$audit->status()->label(),
-					$this->score_to_grade( $score ),
+					$this->escape_csv( Datetime_Util::format_for_display( $audit->audit_date(), 'Y-m-d H:i:s' ) ),
+					$this->escape_csv( (string) $score ),
+					$this->escape_csv( $audit->status()->label() ),
+					$this->escape_csv( $this->score_to_grade( $score ) ),
 				]
 			);
 		}
@@ -110,14 +110,24 @@ final class Csv_Export_Service {
 	}
 
 	/**
-	 * RFC 4180-style escape: wrap in quotes if the value contains a comma,
-	 * a quote, or a newline; double up any embedded quotes.
+	 * Escape a single CSV cell against two failure modes:
+	 *
+	 *  1. RFC 4180 quoting — wrap in `"..."` and double-up embedded quotes
+	 *     when the value contains a comma, quote, CR, or LF.
+	 *  2. Formula injection — Excel and Google Sheets interpret cells whose
+	 *     first character is `=`, `+`, `-`, `@`, TAB, or CR as a formula
+	 *     and execute attacker-controlled functions when the user opens the
+	 *     file. Prefix any such cell with a single quote before quoting.
 	 *
 	 * @param string $value Raw cell value.
 	 *
 	 * @return string Escaped cell value.
 	 */
 	private function escape_csv( string $value ): string {
+		if ( '' !== $value && false !== strpbrk( $value[0], "=+-@\t\r" ) ) {
+			$value = "'" . $value;
+		}
+
 		if ( str_contains( $value, ',' ) || str_contains( $value, '"' ) || str_contains( $value, "\n" ) ) {
 			return '"' . str_replace( '"', '""', $value ) . '"';
 		}

@@ -17,6 +17,7 @@ use LEAStudios\SiteAudit\Modules\Audit\Domain\Repositories\Audit_Repository_Inte
 use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Accessibility_Score;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Audit_Status;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\ValueObjects\Run_Strategy;
+use LEAStudios\SiteAudit\Shared\Datetime_Util;
 
 /**
  * Implements {@see Audit_Repository_Interface} on top of `$wpdb`.
@@ -260,11 +261,11 @@ final class Wpdb_Audit_Repository implements Audit_Repository_Interface {
 			new Accessibility_Score( (int) $row['score'] ),
 			Audit_Status::from( (string) $row['status'] ),
 			Run_Strategy::from( (string) $row['strategy'] ),
-			\LEAStudios\SiteAudit\Shared\Datetime_Util::from_mysql( (string) $row['audit_date'] ),
+			Datetime_Util::from_mysql( (string) $row['audit_date'] ),
 			null !== $row['raw_response'] ? (string) $row['raw_response'] : null,
 			null !== $row['error_message'] ? (string) $row['error_message'] : null,
 			(int) $row['retry_count'],
-			\LEAStudios\SiteAudit\Shared\Datetime_Util::from_mysql( (string) $row['created_at'] ),
+			Datetime_Util::from_mysql( (string) $row['created_at'] ),
 		);
 	}
 }
