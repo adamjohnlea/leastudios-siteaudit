@@ -4,7 +4,7 @@ Tags: accessibility, audit, pagespeed, a11y, monitoring
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 0.1.0
+Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -76,10 +76,10 @@ Deleting the plugin via the Plugins screen runs the uninstaller, which drops all
 
 == Changelog ==
 
-= 0.1.0 =
-* Initial release. Complete port of the Beacon Audit standalone application.
+= 1.0.0 =
+* Initial public release. Complete port of the Beacon Audit standalone application: project + URL management, asynchronous audits via Action Scheduler, dashboards, CSV and PDF reports, threshold-breach alert emails, and per-project email subscriptions.
 
 == Upgrade Notice ==
 
-= 0.1.0 =
+= 1.0.0 =
 First public release.

@@ -4,7 +4,7 @@
 
 Accessibility monitoring dashboard for WordPress, powered by the Google PageSpeed Insights API. Track accessibility scores across a portfolio of URLs over time, get email alerts on regressions, and export PDF or CSV reports.
 
-> **Status:** Phases 1–8 shipped. Plugin is functional end-to-end. Active polish pass before a `1.0.0` tag.
+> **Status:** `1.0.0` released. Plugin is functional end-to-end.
 
 ## Features
 
@@ -121,7 +121,7 @@ Tests are split between `tests/Unit/` (pure PHPUnit; value objects, services, re
 - [x] Phase 6 — CSV + PDF exports
 - [x] Phase 7 — Email notifications + subscriptions
 - [x] Phase 8 — Polish (activation notice, capability audit, accessibility pass, READMEs)
-- [ ] `1.0.0` tag
+- [x] `1.0.0` tag
 - [ ] WordPress.org submission
 
 ## Acknowledgments
