@@ -115,7 +115,7 @@ defined( 'ABSPATH' ) || exit;
 						<td>
 							<?php
 							if ( null !== $last_audited ) {
-								echo esc_html( mysql2date( get_option( 'date_format', 'Y-m-d' ), $last_audited->format( 'Y-m-d H:i:s' ) ) );
+								echo esc_html( \LEAStudios\SiteAudit\Shared\Datetime_Util::format_for_display( $last_audited, get_option( 'date_format', 'Y-m-d' ) ) );
 							} else {
 								echo '&mdash;';
 							}

@@ -113,7 +113,7 @@ final class Pdf_Report_Data_Collector implements Pdf_Report_Data_Collector_Inter
 
 		return new Project_Report_Data(
 			$project->name()->value(),
-			( \LEAStudios\SiteAudit\Shared\Datetime_Util::now() )->format( 'Y-m-d H:i:s' ),
+			wp_date( 'Y-m-d H:i:s' ),
 			$summary,
 			$url_summaries,
 			$issues_by_category,

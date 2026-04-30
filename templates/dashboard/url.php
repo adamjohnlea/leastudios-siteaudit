@@ -178,7 +178,7 @@ $trend_arrow = match ( $trend->value ) {
 				<?php foreach ( $audits as $audit_row ) : ?>
 					<?php $row_score = $audit_row->score()->value(); ?>
 					<tr>
-						<td><?php echo esc_html( mysql2date( get_option( 'date_format', 'Y-m-d' ) . ' H:i', $audit_row->audit_date()->format( 'Y-m-d H:i:s' ) ) ); ?></td>
+						<td><?php echo esc_html( \LEAStudios\SiteAudit\Shared\Datetime_Util::format_for_display( $audit_row->audit_date(), get_option( 'date_format', 'Y-m-d' ) . ' H:i' ) ); ?></td>
 						<td><?php echo esc_html( ucfirst( $audit_row->strategy()->value ) ); ?></td>
 						<td>
 							<span class="lsa-score-badge <?php echo esc_attr( $score_class( $row_score ) ); ?>">

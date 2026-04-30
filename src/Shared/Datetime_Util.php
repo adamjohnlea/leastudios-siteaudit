@@ -47,4 +47,27 @@ final class Datetime_Util {
 	public static function from_mysql( string $mysql_datetime ): \DateTimeImmutable {
 		return new \DateTimeImmutable( $mysql_datetime, new \DateTimeZone( 'UTC' ) );
 	}
+
+	/**
+	 * Convert a stored UTC datetime to a string formatted in the WordPress
+	 * display timezone (the `timezone_string` site option, e.g.
+	 * "America/Boise"). Returns an empty string for null input.
+	 *
+	 * Why not `mysql2date()`: that helper interprets its input string as
+	 * already being in `wp_timezone()` and only re-formats the wall clock,
+	 * which silently re-labels UTC values as local time without applying any
+	 * offset. `get_date_from_gmt()` is the canonical "input is UTC, output
+	 * is WP-timezone" conversion.
+	 *
+	 * @param \DateTimeImmutable|null $utc    UTC datetime (typically from `from_mysql`).
+	 * @param string                  $format PHP date format string.
+	 *
+	 * @return string
+	 */
+	public static function format_for_display( ?\DateTimeImmutable $utc, string $format ): string {
+		if ( null === $utc ) {
+			return '';
+		}
+		return get_date_from_gmt( $utc->format( 'Y-m-d H:i:s' ), $format );
+	}
 }
