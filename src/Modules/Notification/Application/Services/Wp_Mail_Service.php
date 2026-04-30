@@ -96,7 +96,14 @@ final class Wp_Mail_Service implements Email_Service_Interface {
 		$file_size = file_exists( $temp_file ) ? (int) filesize( $temp_file ) : -1;
 		$this->diag( sprintf( '  → wrote temp file: %s (%d bytes on disk)', $temp_file, $file_size ) );
 
-		$result = wp_mail( $to, $subject, $body, $this->html_headers(), [ $temp_file ] );
+		// Use WordPress's `[display_name => path]` attachment form (added in
+		// WP 5.6). Without this, PHPMailer derives the attachment's display
+		// name from `basename($path)` — which exposes our internal temp
+		// filename to the recipient. On installs whose `sanitize_file_name`
+		// filter chain mangles the path (e.g. some security plugins inject
+		// "unnamed-file"), the resulting attachment name gets flagged and
+		// silently stripped by Gmail / mail security gateways.
+		$result = wp_mail( $to, $subject, $body, $this->html_headers(), [ $attachment_filename => $temp_file ] );
 
 		$still_exists = file_exists( $temp_file );
 		$this->diag( sprintf( '  → wp_mail returned %s (file still on disk: %s)', $result ? 'true' : 'false', $still_exists ? 'yes' : 'no' ) );
@@ -206,9 +213,16 @@ final class Wp_Mail_Service implements Email_Service_Interface {
 			return null;
 		}
 
-		$extension = pathinfo( $filename, PATHINFO_EXTENSION );
-		$extension = '' !== $extension ? '.' . sanitize_file_name( $extension ) : '';
-		$path      = trailingslashit( $dir ) . uniqid( 'lsa-att-', true ) . $extension;
+		// Don't run the extension through `sanitize_file_name()` — some
+		// install-level filters (security plugins) inject `unnamed-file`
+		// when the input looks "weird" to them. Limit to lowercase alnum
+		// instead; the extension always comes from filenames we control.
+		$raw_extension = (string) pathinfo( $filename, PATHINFO_EXTENSION );
+		$extension     = preg_replace( '/[^a-z0-9]/', '', strtolower( $raw_extension ) ) ?? '';
+		$path          = trailingslashit( $dir ) . uniqid( 'lsa-att-', true );
+		if ( '' !== $extension ) {
+			$path .= '.' . $extension;
+		}
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- targeted temp file under uploads, lifecycle managed locally.
 		$written = file_put_contents( $path, $bytes );

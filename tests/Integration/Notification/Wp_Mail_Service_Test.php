@@ -61,13 +61,20 @@ final class Wp_Mail_Service_Test extends TestCase {
 		$mailer = tests_retrieve_phpmailer_instance();
 		$this->assertNotFalse( $mailer );
 
-		// `getAttachments()` returns a list of arrays; the file path is index 0.
+		// `getAttachments()` returns a list of arrays. Index 0 is the path,
+		// index 2 is the display name PHPMailer will use in the MIME part.
 		$attachments = $mailer->getAttachments();
 		$this->assertCount( 1, $attachments );
 
-		// The temp file is unlinked after wp_mail returns, so we can't read
-		// it; but we can confirm the attached path was under our temp dir.
+		// The on-disk file lives under our temp dir.
 		$this->assertStringContainsString( 'leastudios-siteaudit-tmp', $attachments[0][0] );
+
+		// The recipient sees the clean display name we passed in, not the
+		// scrambled internal temp filename. Without this, mail security
+		// gateways (Gmail's anti-malware in particular) flag attachments
+		// with placeholder-looking names like `lsa-att-XXX.unnamed-file.pdf`
+		// and silently drop them — which was the original bug.
+		$this->assertSame( 'report-test.pdf', $attachments[0][2] );
 	}
 
 	public function test_send_with_attachment_schedules_deferred_cleanup(): void {
