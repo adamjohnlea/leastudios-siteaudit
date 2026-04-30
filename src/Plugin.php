@@ -241,6 +241,14 @@ final class Plugin {
 			10,
 			3
 		);
+
+		// Deferred cleanup of attachment temp files (see Wp_Mail_Service for why).
+		add_action(
+			Wp_Mail_Service::CLEANUP_HOOK,
+			[ $email_service, 'cleanup_attachment' ],
+			10,
+			1
+		);
 	}
 
 	/**

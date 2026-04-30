@@ -70,12 +70,17 @@ final class Wp_Mail_Service_Test extends TestCase {
 		$this->assertStringContainsString( 'leastudios-siteaudit-tmp', $attachments[0][0] );
 	}
 
-	public function test_send_with_attachment_cleans_up_temp_file_after_send(): void {
-		$upload_dir = wp_upload_dir();
-		$temp_dir   = trailingslashit( $upload_dir['basedir'] ) . 'leastudios-siteaudit-tmp';
+	public function test_send_with_attachment_schedules_deferred_cleanup(): void {
+		// Action Scheduler is bootstrapped by the plugin's main file at
+		// PHPUnit run time; if the function is unavailable in this env, skip.
+		if ( ! function_exists( 'as_schedule_single_action' ) ) {
+			$this->markTestSkipped( 'Action Scheduler not loaded in this test environment.' );
+		}
 
-		$before_files = is_dir( $temp_dir ) ? glob( $temp_dir . '/*' ) : [];
-		$before_count = is_array( $before_files ) ? count( $before_files ) : 0;
+		// Clear any pending cleanup actions queued by earlier tests.
+		if ( function_exists( 'as_unschedule_all_actions' ) ) {
+			as_unschedule_all_actions( Wp_Mail_Service::CLEANUP_HOOK );
+		}
 
 		$this->service->send_with_attachment(
 			'recipient@example.com',
@@ -85,9 +90,57 @@ final class Wp_Mail_Service_Test extends TestCase {
 			'file.pdf'
 		);
 
-		$after_files = is_dir( $temp_dir ) ? glob( $temp_dir . '/*' ) : [];
-		$after_count = is_array( $after_files ) ? count( $after_files ) : 0;
+		$pending = as_get_scheduled_actions(
+			[
+				'hook'   => Wp_Mail_Service::CLEANUP_HOOK,
+				'status' => \ActionScheduler_Store::STATUS_PENDING,
+			],
+			'ids'
+		);
 
-		$this->assertSame( $before_count, $after_count, 'Temp attachment file must be unlinked after send.' );
+		$this->assertCount( 1, $pending, 'A single cleanup action must be queued for the attachment.' );
+
+		// Tidy up so this test doesn't bleed into others.
+		as_unschedule_all_actions( Wp_Mail_Service::CLEANUP_HOOK );
+	}
+
+	public function test_cleanup_attachment_deletes_files_in_tmp_subdir(): void {
+		$upload_dir = wp_upload_dir();
+		$temp_dir   = trailingslashit( $upload_dir['basedir'] ) . 'leastudios-siteaudit-tmp';
+		wp_mkdir_p( $temp_dir );
+		$path = $temp_dir . '/test-cleanup-' . uniqid( '', true ) . '.pdf';
+		file_put_contents( $path, 'fake' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+
+		$this->assertFileExists( $path );
+		$this->service->cleanup_attachment( $path );
+		$this->assertFileDoesNotExist( $path );
+	}
+
+	public function test_cleanup_attachment_refuses_paths_outside_tmp_subdir(): void {
+		$path = sys_get_temp_dir() . '/lsa-dangerous-' . uniqid( '', true ) . '.txt';
+		file_put_contents( $path, 'fake' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
+
+		$this->service->cleanup_attachment( $path );
+
+		$this->assertFileExists( $path, 'Files outside the temp subdir must not be deleted.' );
+
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.unlink_unlink -- test cleanup.
+		@unlink( $path );
+	}
+
+	public function test_send_with_attachment_falls_back_to_body_only_for_zero_byte_attachment(): void {
+		$ok = $this->service->send_with_attachment(
+			'recipient@example.com',
+			'Subject',
+			'<p>Body only</p>',
+			'',
+			'empty.pdf'
+		);
+
+		$this->assertTrue( $ok );
+
+		$mailer = tests_retrieve_phpmailer_instance();
+		$this->assertNotFalse( $mailer );
+		$this->assertSame( [], $mailer->getAttachments(), 'No attachment must be sent for an empty body.' );
 	}
 }
