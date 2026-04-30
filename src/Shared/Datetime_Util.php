@@ -12,23 +12,31 @@ namespace LEAStudios\SiteAudit\Shared;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Centralises every "now" timestamp the plugin records and every datetime
- * read back from MySQL. Always operates in UTC so the storage format is
- * stable across timezone-misconfigured PHP runtimes, which lets WordPress's
- * own `mysql2date()` / `wp_date()` helpers convert correctly to the user's
- * configured display timezone.
+ * Centralises UTC↔WP-timezone conversion for stored timestamps.
  *
- * Why a helper instead of `new \DateTimeImmutable()`:
+ * Two parallel APIs ship side by side:
  *
- * The bare constructor uses PHP's `date.timezone` ini setting, which differs
- * between Herd local dev (often the OS timezone) and production servers
- * (usually UTC). Mixing the two writes inconsistent strings to MySQL and
- * causes the dashboard to display stale or future-shifted timestamps.
+ *   - **String / MySQL form** — `utc_now_mysql()`, `format_for_display()`.
+ *     Used by callers that round-trip through `$wpdb` and prefer to keep
+ *     timestamps as plain MySQL datetime strings.
+ *   - **DateTimeImmutable form** — `now()`, `from_mysql()`,
+ *     `format_immutable_for_display()`. Used by callers that prefer to
+ *     hold immutable date objects in their domain models.
+ *
+ * Entries are written via `current_time( 'mysql', true )` (GMT). On display,
+ * the same strings need converting back to the WordPress display timezone.
+ * `mysql2date()` re-labels UTC values as local without applying any offset,
+ * so use `get_date_from_gmt()` — the canonical "input is UTC, output is
+ * WP-tz" WordPress API.
+ *
+ * The class is intentionally identical (modulo the namespace) across every
+ * leastudios-* plugin that ships it — see
+ * `leastudios-dev-tools/bin/check-shared.sh` for the drift guard.
  */
 final class Datetime_Util {
 
 	/**
-	 * Current time in UTC.
+	 * Current time in UTC as an immutable DateTime object.
 	 *
 	 * @return \DateTimeImmutable
 	 */
@@ -37,10 +45,18 @@ final class Datetime_Util {
 	}
 
 	/**
-	 * Hydrate a MySQL datetime string read from one of our tables. The
-	 * caller's contract is that everything stored by this plugin is UTC.
+	 * Current time in UTC, formatted for a MySQL `datetime` column.
 	 *
-	 * @param string $mysql_datetime e.g. "2026-04-30 00:54:30".
+	 * @return string e.g. "2026-04-30 02:41:00".
+	 */
+	public static function utc_now_mysql(): string {
+		return self::now()->format( 'Y-m-d H:i:s' );
+	}
+
+	/**
+	 * Parse a stored UTC MySQL datetime string back into an immutable DateTime.
+	 *
+	 * @param string $mysql_datetime Stored UTC datetime, e.g. "2026-04-30 02:41:00".
 	 *
 	 * @return \DateTimeImmutable
 	 */
@@ -49,25 +65,34 @@ final class Datetime_Util {
 	}
 
 	/**
-	 * Convert a stored UTC datetime to a string formatted in the WordPress
-	 * display timezone (the `timezone_string` site option, e.g.
-	 * "America/Boise"). Returns an empty string for null input.
+	 * Convert a stored UTC datetime string to the WordPress display timezone.
 	 *
-	 * Why not `mysql2date()`: that helper interprets its input string as
-	 * already being in `wp_timezone()` and only re-formats the wall clock,
-	 * which silently re-labels UTC values as local time without applying any
-	 * offset. `get_date_from_gmt()` is the canonical "input is UTC, output
-	 * is WP-timezone" conversion.
+	 * @param string|null $utc_mysql Stored UTC datetime, e.g. "2026-04-30 02:41:00".
+	 * @param string      $format    PHP date format string.
 	 *
-	 * @param \DateTimeImmutable|null $utc    UTC datetime (typically from `from_mysql`).
+	 * @return string Empty string for null/empty input.
+	 */
+	public static function format_for_display( ?string $utc_mysql, string $format ): string {
+		if ( null === $utc_mysql || '' === $utc_mysql ) {
+			return '';
+		}
+
+		return get_date_from_gmt( $utc_mysql, $format );
+	}
+
+	/**
+	 * Convert a UTC DateTimeImmutable to a string in the WordPress display timezone.
+	 *
+	 * @param \DateTimeImmutable|null $utc    Source instant in UTC.
 	 * @param string                  $format PHP date format string.
 	 *
-	 * @return string
+	 * @return string Empty string when `$utc` is null.
 	 */
-	public static function format_for_display( ?\DateTimeImmutable $utc, string $format ): string {
+	public static function format_immutable_for_display( ?\DateTimeImmutable $utc, string $format ): string {
 		if ( null === $utc ) {
 			return '';
 		}
+
 		return get_date_from_gmt( $utc->format( 'Y-m-d H:i:s' ), $format );
 	}
 }
