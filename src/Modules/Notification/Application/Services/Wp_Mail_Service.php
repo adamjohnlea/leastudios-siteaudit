@@ -78,30 +78,55 @@ final class Wp_Mail_Service implements Email_Service_Interface {
 	 * @return bool
 	 */
 	public function send_with_attachment( string $to, string $subject, string $body, string $attachment_bytes, string $attachment_filename ): bool {
+		$bytes_size = strlen( $attachment_bytes );
+		$this->diag( sprintf( 'send_with_attachment: to=%s subject="%s" filename=%s bytes=%d', $to, $subject, $attachment_filename, $bytes_size ) );
+
 		if ( '' === $attachment_bytes ) {
-			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- intentional error logging at the email boundary.
-			error_log( sprintf( '[leastudios-siteaudit] refusing to send 0-byte attachment to %s (subject: %s); falling back to body-only', $to, $subject ) );
+			$this->diag( '  → 0-byte attachment, falling back to body-only send()' );
 			return $this->send( $to, $subject, $body );
 		}
 
 		$temp_file = $this->write_temp_file( $attachment_bytes, $attachment_filename );
 
 		if ( null === $temp_file ) {
-			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- intentional error logging at the email boundary.
-			error_log( sprintf( '[leastudios-siteaudit] could not write temp attachment for %s', $to ) );
+			$this->diag( '  → write_temp_file FAILED' );
 			return false;
 		}
 
+		$file_size = file_exists( $temp_file ) ? (int) filesize( $temp_file ) : -1;
+		$this->diag( sprintf( '  → wrote temp file: %s (%d bytes on disk)', $temp_file, $file_size ) );
+
 		$result = wp_mail( $to, $subject, $body, $this->html_headers(), [ $temp_file ] );
 
-		if ( ! $result ) {
-			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- intentional error logging at the email boundary.
-			error_log( sprintf( '[leastudios-siteaudit] wp_mail returned false for %s (subject: %s, attachment: %s)', $to, $subject, $attachment_filename ) );
-		}
+		$still_exists = file_exists( $temp_file );
+		$this->diag( sprintf( '  → wp_mail returned %s (file still on disk: %s)', $result ? 'true' : 'false', $still_exists ? 'yes' : 'no' ) );
 
 		$this->schedule_cleanup( $temp_file );
+		$this->diag( '  → cleanup scheduled' );
 
 		return (bool) $result;
+	}
+
+	/**
+	 * Always-on diagnostic logger that writes to a fixed file under uploads
+	 * regardless of `WP_DEBUG_LOG`. Temporary instrumentation for tracing
+	 * the missing-attachment bug; can be removed once the cause is known.
+	 *
+	 * @param string $line Message.
+	 *
+	 * @return void
+	 */
+	private function diag( string $line ): void {
+		$upload_dir = wp_upload_dir();
+		if ( empty( $upload_dir['basedir'] ) ) {
+			return;
+		}
+
+		$path  = trailingslashit( $upload_dir['basedir'] ) . 'leastudios-siteaudit-mail.log';
+		$entry = '[' . gmdate( 'Y-m-d H:i:s' ) . ' UTC] ' . $line . "\n";
+
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- targeted diagnostic file write.
+		@file_put_contents( $path, $entry, FILE_APPEND );
 	}
 
 	/**
@@ -116,13 +141,16 @@ final class Wp_Mail_Service implements Email_Service_Interface {
 	 */
 	public function cleanup_attachment( string $path ): void {
 		if ( ! str_contains( $path, self::TEMP_SUBDIR ) ) {
+			$this->diag( sprintf( 'cleanup_attachment: REFUSED (path outside tmp subdir): %s', $path ) );
 			return;
 		}
 
-		if ( file_exists( $path ) ) {
+		$existed = file_exists( $path );
+		if ( $existed ) {
 			// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged, WordPress.WP.AlternativeFunctions.unlink_unlink -- best-effort cleanup; the file may already be gone.
 			@unlink( $path );
 		}
+		$this->diag( sprintf( 'cleanup_attachment: %s (existed: %s)', $path, $existed ? 'yes' : 'no' ) );
 	}
 
 	/**
