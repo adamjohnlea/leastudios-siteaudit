@@ -62,22 +62,37 @@ final class Audit_Report_Notifier_Test extends TestCase {
 		);
 	}
 
-	public function test_on_audit_completed_skips_failed_audits(): void {
-		$url   = $this->make_url( 1 );
-		$audit = $this->make_audit( Audit_Status::FAILED );
+	public function test_on_audit_completed_skips_when_every_strategy_failed(): void {
+		$url    = $this->make_url( 1 );
+		$audits = [ $this->make_audit( Audit_Status::FAILED ), $this->make_audit( Audit_Status::FAILED ) ];
 
 		$this->project_repository->expects( $this->never() )->method( 'find_by_id' );
 
-		$this->notifier->on_audit_completed( $audit, $url, null );
+		$this->notifier->on_audit_completed( $url, $audits, [] );
 	}
 
 	public function test_on_audit_completed_skips_urls_without_a_project(): void {
-		$url   = $this->make_url( null );
-		$audit = $this->make_audit();
+		$url    = $this->make_url( null );
+		$audits = [ $this->make_audit() ];
 
 		$this->project_repository->expects( $this->never() )->method( 'find_by_id' );
 
-		$this->notifier->on_audit_completed( $audit, $url, null );
+		$this->notifier->on_audit_completed( $url, $audits, [] );
+	}
+
+	public function test_on_audit_completed_fires_once_when_at_least_one_strategy_completed(): void {
+		$url     = $this->make_url( 1 );
+		$audits  = [ $this->make_audit( Audit_Status::COMPLETED ), $this->make_audit( Audit_Status::FAILED ) ];
+		$project = $this->make_project( 1 );
+
+		$this->project_repository->method( 'find_by_id' )->willReturn( $project );
+		$this->subscription_repository->method( 'find_subscribers_by_project_id' )->willReturn( [] );
+
+		$this->project_repository
+			->expects( $this->once() )
+			->method( 'find_by_id' );
+
+		$this->notifier->on_audit_completed( $url, $audits, [] );
 	}
 
 	public function test_notify_for_project_skips_unknown_projects(): void {

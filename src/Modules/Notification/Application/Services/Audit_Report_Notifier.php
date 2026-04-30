@@ -91,25 +91,32 @@ final class Audit_Report_Notifier {
 	/**
 	 * Listener for `leastudios_siteaudit_audit_completed`.
 	 *
-	 * Resolves the project from the audited URL and dispatches a per-project
-	 * report. URLs with no project (`Unassigned URLs` in the dashboard) are
-	 * skipped — there's no project to subscribe to.
+	 * Fires once per `run_audit()` call (not once per strategy). Skips if
+	 * the URL is unassigned or every strategy in this run failed.
 	 *
-	 * @param Audit      $audit          Just-completed audit.
-	 * @param Url        $url            URL the audit ran on.
-	 * @param Audit|null $previous_audit Unused; here to match the action signature.
+	 * @param Url                       $url             URL audited.
+	 * @param array<int, Audit>         $audits          Audits produced by this run.
+	 * @param array<string, Audit|null> $previous_audits Map of strategy value => prior audit. Unused; signature parity with the action.
 	 *
 	 * @return void
 	 */
-	public function on_audit_completed( Audit $audit, Url $url, ?Audit $previous_audit = null ): void {
-		unset( $previous_audit ); // Listener signature parity; not needed here.
-
-		if ( Audit_Status::COMPLETED !== $audit->status() ) {
-			return;
-		}
+	public function on_audit_completed( Url $url, array $audits, array $previous_audits = [] ): void {
+		unset( $previous_audits ); // Listener signature parity; not needed here.
 
 		$project_id = $url->project_id();
 		if ( null === $project_id ) {
+			return;
+		}
+
+		// Skip if every strategy failed — no completed data to report on.
+		$any_completed = false;
+		foreach ( $audits as $audit ) {
+			if ( Audit_Status::COMPLETED === $audit->status() ) {
+				$any_completed = true;
+				break;
+			}
+		}
+		if ( ! $any_completed ) {
 			return;
 		}
 
@@ -132,6 +139,15 @@ final class Audit_Report_Notifier {
 		$subscribers = $this->subscription_repository->find_subscribers_by_project_id( $project_id );
 		if ( [] === $subscribers ) {
 			return;
+		}
+
+		// Dompdf is memory-hungry (~30MB per render). The Action Scheduler
+		// worker that fires us inherits PHP's default memory_limit; bump to
+		// the admin tier so projects with many issues don't OOM silently and
+		// produce empty PDF bytes — which would then trip the Wp_Mail_Service
+		// fallback to body-only.
+		if ( function_exists( 'wp_raise_memory_limit' ) ) {
+			wp_raise_memory_limit( 'admin' );
 		}
 
 		$report   = $this->data_collector->collect( $project );

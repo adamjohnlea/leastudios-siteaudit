@@ -63,16 +63,18 @@ final class Alert_Notifier {
 	/**
 	 * Listener for `leastudios_siteaudit_audit_completed`.
 	 *
-	 * @param Audit      $audit          Just-completed audit.
-	 * @param Url        $url            URL the audit ran on.
-	 * @param Audit|null $previous_audit Latest completed audit prior to this one (null if none).
+	 * Walks the audits from this run and dispatches **one** alert email per
+	 * subscriber if any strategy breached either threshold. Picks the worst
+	 * breach (lowest score). Returns early when the URL has alerts disabled,
+	 * is unassigned to a project, or no subscribers exist.
+	 *
+	 * @param Url                       $url             URL audited.
+	 * @param array<int, Audit>         $audits          Audits produced by this run, one per strategy.
+	 * @param array<string, Audit|null> $previous_audits Map of `Run_Strategy::value` => prior completed audit.
 	 *
 	 * @return void
 	 */
-	public function notify_if_threshold_breached( Audit $audit, Url $url, ?Audit $previous_audit ): void {
-		if ( Audit_Status::COMPLETED !== $audit->status() ) {
-			return;
-		}
+	public function notify_if_threshold_breached( Url $url, array $audits, array $previous_audits ): void {
 		if ( ! $url->alerts_enabled() ) {
 			return;
 		}
@@ -82,17 +84,14 @@ final class Alert_Notifier {
 			return;
 		}
 
-		$current_score   = $audit->score()->value();
 		$threshold_score = $url->alert_threshold_score();
 		$threshold_drop  = $url->alert_threshold_drop();
-		$previous_score  = null !== $previous_audit ? $previous_audit->score()->value() : null;
+		if ( null === $threshold_score && null === $threshold_drop ) {
+			return;
+		}
 
-		$score_breached = null !== $threshold_score && $current_score <= $threshold_score;
-		$drop_breached  = null !== $threshold_drop
-			&& null !== $previous_score
-			&& ( $previous_score - $current_score ) >= $threshold_drop;
-
-		if ( ! $score_breached && ! $drop_breached ) {
+		$breach = $this->find_worst_breach( $audits, $previous_audits, $threshold_score, $threshold_drop );
+		if ( null === $breach ) {
 			return;
 		}
 
@@ -112,19 +111,64 @@ final class Alert_Notifier {
 			[
 				'url_name'                 => $display_name,
 				'url_address'              => $url->url()->value(),
-				'current_score'            => $current_score,
-				'previous_score'           => $previous_score,
-				'score_drop'               => null !== $previous_score ? $previous_score - $current_score : null,
+				'current_score'            => $breach['current_score'],
+				'previous_score'           => $breach['previous_score'],
+				'score_drop'               => null !== $breach['previous_score'] ? $breach['previous_score'] - $breach['current_score'] : null,
 				'threshold_score'          => $threshold_score,
 				'threshold_drop'           => $threshold_drop,
-				'score_threshold_breached' => $score_breached,
-				'drop_threshold_breached'  => $drop_breached,
+				'score_threshold_breached' => $breach['score_breached'],
+				'drop_threshold_breached'  => $breach['drop_breached'],
 			]
 		);
 
 		foreach ( $subscribers as $subscriber ) {
 			$this->email_service->send( (string) $subscriber->user_email, $subject, $body );
 		}
+	}
+
+	/**
+	 * Walk every completed audit and return the worst breach (lowest score),
+	 * or null if nothing breached.
+	 *
+	 * @param array<int, Audit>         $audits          Audits from this run.
+	 * @param array<string, Audit|null> $previous_audits Map of strategy value to prior audit.
+	 * @param int|null                  $threshold_score URL's score-below threshold (null if not configured).
+	 * @param int|null                  $threshold_drop  URL's drop-by threshold (null if not configured).
+	 *
+	 * @return array{current_score: int, previous_score: int|null, score_breached: bool, drop_breached: bool}|null
+	 */
+	private function find_worst_breach( array $audits, array $previous_audits, ?int $threshold_score, ?int $threshold_drop ): ?array {
+		$worst = null;
+
+		foreach ( $audits as $audit ) {
+			if ( Audit_Status::COMPLETED !== $audit->status() ) {
+				continue;
+			}
+
+			$current_score  = $audit->score()->value();
+			$previous       = $previous_audits[ $audit->strategy()->value ] ?? null;
+			$previous_score = null !== $previous ? $previous->score()->value() : null;
+
+			$score_breached = null !== $threshold_score && $current_score <= $threshold_score;
+			$drop_breached  = null !== $threshold_drop
+				&& null !== $previous_score
+				&& ( $previous_score - $current_score ) >= $threshold_drop;
+
+			if ( ! $score_breached && ! $drop_breached ) {
+				continue;
+			}
+
+			if ( null === $worst || $current_score < $worst['current_score'] ) {
+				$worst = [
+					'current_score'  => $current_score,
+					'previous_score' => $previous_score,
+					'score_breached' => $score_breached,
+					'drop_breached'  => $drop_breached,
+				];
+			}
+		}
+
+		return $worst;
 	}
 
 	/**

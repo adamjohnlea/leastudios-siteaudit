@@ -2,7 +2,9 @@
 /**
  * Alert_Notifier unit tests.
  *
- * Verifies threshold logic, early-exit guards, and per-subscriber dispatch.
+ * Verifies threshold logic across the audits collection (one alert email
+ * per `run_audit()` call, picking the worst breach), early-exit guards,
+ * and per-subscriber dispatch.
  *
  * @package LEAStudios\SiteAudit\Tests
  */
@@ -41,55 +43,63 @@ final class Alert_Notifier_Test extends TestCase {
 		$this->notifier                = new Alert_Notifier( $this->subscription_repository, $this->email_service );
 	}
 
-	public function test_does_nothing_when_audit_is_not_completed(): void {
-		$url   = $this->make_url( alerts_enabled: true, threshold_score: 70, project_id: 1 );
-		$audit = $this->make_audit( 50, Audit_Status::FAILED );
-
-		$this->email_service->expects( $this->never() )->method( 'send' );
-
-		$this->notifier->notify_if_threshold_breached( $audit, $url, null );
-	}
-
 	public function test_does_nothing_when_alerts_are_disabled(): void {
-		$url   = $this->make_url( alerts_enabled: false, threshold_score: 70, project_id: 1 );
-		$audit = $this->make_audit( 50 );
+		$url = $this->make_url( alerts_enabled: false, threshold_score: 70, project_id: 1 );
 
 		$this->email_service->expects( $this->never() )->method( 'send' );
 
-		$this->notifier->notify_if_threshold_breached( $audit, $url, null );
+		$this->notifier->notify_if_threshold_breached( $url, [ $this->make_audit( Run_Strategy::DESKTOP, 50 ) ], [] );
 	}
 
 	public function test_does_nothing_when_url_has_no_project(): void {
-		$url   = $this->make_url( alerts_enabled: true, threshold_score: 70, project_id: null );
-		$audit = $this->make_audit( 50 );
+		$url = $this->make_url( alerts_enabled: true, threshold_score: 70, project_id: null );
 
 		$this->email_service->expects( $this->never() )->method( 'send' );
 
-		$this->notifier->notify_if_threshold_breached( $audit, $url, null );
+		$this->notifier->notify_if_threshold_breached( $url, [ $this->make_audit( Run_Strategy::DESKTOP, 50 ) ], [] );
 	}
 
 	public function test_does_nothing_when_no_thresholds_are_set(): void {
-		$url   = $this->make_url( alerts_enabled: true, threshold_score: null, threshold_drop: null, project_id: 1 );
-		$audit = $this->make_audit( 0 );
+		$url = $this->make_url( alerts_enabled: true, threshold_score: null, threshold_drop: null, project_id: 1 );
 
 		$this->email_service->expects( $this->never() )->method( 'send' );
 
-		$this->notifier->notify_if_threshold_breached( $audit, $url, null );
+		$this->notifier->notify_if_threshold_breached( $url, [ $this->make_audit( Run_Strategy::DESKTOP, 0 ) ], [] );
 	}
 
-	public function test_does_nothing_when_no_thresholds_breached(): void {
-		$url   = $this->make_url( alerts_enabled: true, threshold_score: 70, threshold_drop: 10, project_id: 1 );
-		$audit = $this->make_audit( 90 );
-		$prior = $this->make_audit( 95 );
+	public function test_does_nothing_when_no_strategy_breaches_threshold(): void {
+		$url = $this->make_url( alerts_enabled: true, threshold_score: 70, threshold_drop: 10, project_id: 1 );
+
+		$audits   = [
+			$this->make_audit( Run_Strategy::DESKTOP, 90 ),
+			$this->make_audit( Run_Strategy::MOBILE, 88 ),
+		];
+		$previous = [
+			Run_Strategy::DESKTOP->value => $this->make_audit( Run_Strategy::DESKTOP, 92 ),
+			Run_Strategy::MOBILE->value  => $this->make_audit( Run_Strategy::MOBILE, 91 ),
+		];
 
 		$this->email_service->expects( $this->never() )->method( 'send' );
 
-		$this->notifier->notify_if_threshold_breached( $audit, $url, $prior );
+		$this->notifier->notify_if_threshold_breached( $url, $audits, $previous );
 	}
 
-	public function test_fires_alert_when_score_at_or_below_threshold(): void {
+	public function test_skips_failed_audits_in_the_run(): void {
+		$url = $this->make_url( alerts_enabled: true, threshold_score: 70, project_id: 1 );
+
+		$audits = [
+			$this->make_audit( Run_Strategy::DESKTOP, 0, Audit_Status::FAILED ),
+			$this->make_audit( Run_Strategy::MOBILE, 90 ),
+		];
+
+		$this->email_service->expects( $this->never() )->method( 'send' );
+
+		$this->notifier->notify_if_threshold_breached( $url, $audits, [] );
+	}
+
+	public function test_fires_one_alert_when_score_at_or_below_threshold(): void {
 		$url        = $this->make_url( alerts_enabled: true, threshold_score: 70, project_id: 1 );
-		$audit      = $this->make_audit( 70 );
+		$audits     = [ $this->make_audit( Run_Strategy::DESKTOP, 70 ) ];
 		$subscriber = $this->make_subscriber( 'admin@example.com' );
 
 		$this->subscription_repository->method( 'find_subscribers_by_project_id' )->with( 1 )->willReturn( [ $subscriber ] );
@@ -104,37 +114,67 @@ final class Alert_Notifier_Test extends TestCase {
 			)
 			->willReturn( true );
 
-		$this->notifier->notify_if_threshold_breached( $audit, $url, null );
+		$this->notifier->notify_if_threshold_breached( $url, $audits, [] );
 	}
 
-	public function test_fires_alert_when_score_drops_by_threshold(): void {
-		$url        = $this->make_url( alerts_enabled: true, threshold_score: null, threshold_drop: 10, project_id: 1 );
-		$audit      = $this->make_audit( 70 );
-		$prior      = $this->make_audit( 85 );  // 15 point drop
-		$subscriber = $this->make_subscriber( 'admin@example.com' );
+	public function test_fires_one_alert_when_score_drops_by_threshold(): void {
+		$url      = $this->make_url( alerts_enabled: true, threshold_score: null, threshold_drop: 10, project_id: 1 );
+		$audits   = [ $this->make_audit( Run_Strategy::DESKTOP, 70 ) ];
+		$previous = [ Run_Strategy::DESKTOP->value => $this->make_audit( Run_Strategy::DESKTOP, 85 ) ];
 
-		$this->subscription_repository->method( 'find_subscribers_by_project_id' )->willReturn( [ $subscriber ] );
+		$this->subscription_repository->method( 'find_subscribers_by_project_id' )->willReturn( [ $this->make_subscriber( 'admin@example.com' ) ] );
 
 		$this->email_service
 			->expects( $this->once() )
 			->method( 'send' )
 			->willReturn( true );
 
-		$this->notifier->notify_if_threshold_breached( $audit, $url, $prior );
+		$this->notifier->notify_if_threshold_breached( $url, $audits, $previous );
 	}
 
-	public function test_does_not_fire_drop_alert_when_no_previous_audit(): void {
-		$url   = $this->make_url( alerts_enabled: true, threshold_score: null, threshold_drop: 10, project_id: 1 );
-		$audit = $this->make_audit( 50 );  // First audit ever; no drop to measure.
+	public function test_picks_worst_breach_when_multiple_strategies_breach(): void {
+		$url    = $this->make_url( alerts_enabled: true, threshold_score: 70, project_id: 1 );
+		$audits = [
+			$this->make_audit( Run_Strategy::DESKTOP, 65 ),
+			$this->make_audit( Run_Strategy::MOBILE, 40 ), // Worse score wins.
+		];
 
-		$this->email_service->expects( $this->never() )->method( 'send' );
+		$this->subscription_repository->method( 'find_subscribers_by_project_id' )->willReturn( [ $this->make_subscriber( 'admin@example.com' ) ] );
 
-		$this->notifier->notify_if_threshold_breached( $audit, $url, null );
+		// Email body should mention the lower score (40), not 65.
+		$this->email_service
+			->expects( $this->once() )
+			->method( 'send' )
+			->with(
+				$this->anything(),
+				$this->anything(),
+				$this->stringContains( '40' )
+			)
+			->willReturn( true );
+
+		$this->notifier->notify_if_threshold_breached( $url, $audits, [] );
+	}
+
+	public function test_sends_only_one_email_per_run_even_when_both_strategies_breach(): void {
+		$url    = $this->make_url( alerts_enabled: true, threshold_score: 70, project_id: 1 );
+		$audits = [
+			$this->make_audit( Run_Strategy::DESKTOP, 50 ),
+			$this->make_audit( Run_Strategy::MOBILE, 60 ),
+		];
+
+		$this->subscription_repository->method( 'find_subscribers_by_project_id' )->willReturn( [ $this->make_subscriber( 'admin@example.com' ) ] );
+
+		$this->email_service
+			->expects( $this->once() ) // Exactly one, not two.
+			->method( 'send' )
+			->willReturn( true );
+
+		$this->notifier->notify_if_threshold_breached( $url, $audits, [] );
 	}
 
 	public function test_sends_to_every_subscriber(): void {
-		$url   = $this->make_url( alerts_enabled: true, threshold_score: 70, project_id: 1 );
-		$audit = $this->make_audit( 60 );
+		$url    = $this->make_url( alerts_enabled: true, threshold_score: 70, project_id: 1 );
+		$audits = [ $this->make_audit( Run_Strategy::DESKTOP, 60 ) ];
 
 		$subscribers = [
 			$this->make_subscriber( 'one@example.com' ),
@@ -149,17 +189,17 @@ final class Alert_Notifier_Test extends TestCase {
 			->method( 'send' )
 			->willReturn( true );
 
-		$this->notifier->notify_if_threshold_breached( $audit, $url, null );
+		$this->notifier->notify_if_threshold_breached( $url, $audits, [] );
 	}
 
 	public function test_does_nothing_when_no_subscribers_exist(): void {
-		$url   = $this->make_url( alerts_enabled: true, threshold_score: 70, project_id: 1 );
-		$audit = $this->make_audit( 50 );
+		$url    = $this->make_url( alerts_enabled: true, threshold_score: 70, project_id: 1 );
+		$audits = [ $this->make_audit( Run_Strategy::DESKTOP, 50 ) ];
 
 		$this->subscription_repository->method( 'find_subscribers_by_project_id' )->willReturn( [] );
 		$this->email_service->expects( $this->never() )->method( 'send' );
 
-		$this->notifier->notify_if_threshold_breached( $audit, $url, null );
+		$this->notifier->notify_if_threshold_breached( $url, $audits, [] );
 	}
 
 	private function make_url( bool $alerts_enabled, ?int $project_id, ?int $threshold_score = null, ?int $threshold_drop = null ): Url {
@@ -182,7 +222,7 @@ final class Alert_Notifier_Test extends TestCase {
 		);
 	}
 
-	private function make_audit( int $score, Audit_Status $status = Audit_Status::COMPLETED ): Audit {
+	private function make_audit( Run_Strategy $strategy, int $score, Audit_Status $status = Audit_Status::COMPLETED ): Audit {
 		$now = new \DateTimeImmutable();
 
 		return new Audit(
@@ -190,7 +230,7 @@ final class Alert_Notifier_Test extends TestCase {
 			1,
 			new Accessibility_Score( $score ),
 			$status,
-			Run_Strategy::DESKTOP,
+			$strategy,
 			$now,
 			null,
 			null,

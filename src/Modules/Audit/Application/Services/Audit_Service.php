@@ -151,9 +151,21 @@ final class Audit_Service implements Audit_Service_Interface {
 			Audit_Strategy::BOTH    => [ Run_Strategy::DESKTOP, Run_Strategy::MOBILE ],
 		};
 
+		// Snapshot prior completed audits BEFORE running anything. The
+		// per-strategy snapshots are passed to listeners so the alert
+		// notifier can compute drop deltas, and they're used inline below
+		// for the comparison rows.
+		$previous_audits = [];
+		foreach ( $strategies as $strategy ) {
+			$previous_audits[ $strategy->value ] = $this->audit_repository->find_latest_completed_by_url_id_and_strategy(
+				$url->id() ?? 0,
+				$strategy
+			);
+		}
+
 		$results = [];
 		foreach ( $strategies as $strategy ) {
-			$results[] = $this->run_single_audit( $url, $strategy );
+			$results[] = $this->run_single_audit( $url, $strategy, $previous_audits[ $strategy->value ] );
 		}
 
 		$now = new \DateTimeImmutable();
@@ -161,18 +173,34 @@ final class Audit_Service implements Audit_Service_Interface {
 		$url->set_updated_at( $now );
 		$this->url_repository->update( $url );
 
+		// Fire ONE audit-completed action per run_audit() call (not per
+		// strategy). Listeners receive the URL plus the full collection of
+		// audits from this run. This collapses 4 emails per `both`-strategy
+		// run (2 alerts + 2 reports) to 2 (1 alert + 1 report) and
+		// eliminates the second Dompdf render that was causing memory
+		// pressure / empty-PDF attachments.
+		/**
+		 * Fires once after every strategy in a run_audit() call has finished.
+		 *
+		 * @param Url                       $url             URL audited.
+		 * @param array<int, Audit>         $audits          Audits produced by this run, one per strategy.
+		 * @param array<string, Audit|null> $previous_audits Map of `Run_Strategy::value` => prior completed audit (null if first run for that strategy).
+		 */
+		do_action( 'leastudios_siteaudit_audit_completed', $url, $results, $previous_audits );
+
 		return $results;
 	}
 
 	/**
 	 * Run a single audit for one (URL, strategy) tuple.
 	 *
-	 * @param Url          $url      URL to audit.
-	 * @param Run_Strategy $strategy Device profile.
+	 * @param Url          $url            URL to audit.
+	 * @param Run_Strategy $strategy     Device profile.
+	 * @param Audit|null   $previous_audit Prior completed audit for this strategy, or null.
 	 *
 	 * @return Audit
 	 */
-	private function run_single_audit( Url $url, Run_Strategy $strategy ): Audit {
+	private function run_single_audit( Url $url, Run_Strategy $strategy, ?Audit $previous_audit ): Audit {
 		$now   = new \DateTimeImmutable();
 		$audit = new Audit(
 			null,
@@ -189,16 +217,6 @@ final class Audit_Service implements Audit_Service_Interface {
 
 		$audit = $this->audit_repository->save( $audit );
 
-		// Snapshot the prior completed audit BEFORE the current row is marked
-		// COMPLETED. Otherwise the find_latest_completed query can return the
-		// current row itself (it has the latest audit_date). This snapshot
-		// is also what we hand to the audit-completed action, so listeners
-		// (e.g. Alert_Notifier) can compute "score dropped from X to Y".
-		$previous_audit = $this->audit_repository->find_latest_completed_by_url_id_and_strategy(
-			$url->id() ?? 0,
-			$strategy
-		);
-
 		try {
 			$api_response = $this->execute_with_retry( $url->url()->value(), $strategy, $audit );
 
@@ -213,16 +231,6 @@ final class Audit_Service implements Audit_Service_Interface {
 				$comparison = $this->comparison_service->compare( $audit, $previous_audit );
 				$this->comparison_repository->save( $comparison );
 			}
-
-			/**
-			 * Fires after a successful audit run, once score, issues, and
-			 * comparison row have been persisted.
-			 *
-			 * @param Audit      $audit          Just-completed audit.
-			 * @param Url        $url            URL the audit ran on.
-			 * @param Audit|null $previous_audit Prior completed audit for the same (URL, strategy), or null if first run.
-			 */
-			do_action( 'leastudios_siteaudit_audit_completed', $audit, $url, $previous_audit );
 		} catch ( Api_Exception $e ) {
 			$audit->set_status( Audit_Status::FAILED );
 			$audit->set_error_message( $e->getMessage() );
