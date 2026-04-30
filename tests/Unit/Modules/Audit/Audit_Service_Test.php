@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace LEAStudios\SiteAudit\Tests\Unit\Modules\Audit;
 
+use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Audit_Pipeline;
 use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Audit_Service;
 use LEAStudios\SiteAudit\Modules\Audit\Application\Services\Comparison_Service;
 use LEAStudios\SiteAudit\Modules\Audit\Domain\Models\Audit;
@@ -56,14 +57,19 @@ final class Audit_Service_Test extends TestCase {
 		$this->pagespeed_client      = $this->createMock( PageSpeed_Client_Interface::class );
 		$this->comparison_repository = $this->createMock( Audit_Comparison_Repository_Interface::class );
 
-		$this->service = new Audit_Service(
-			$this->url_repository,
+		$pipeline = new Audit_Pipeline(
 			$this->audit_repository,
 			$this->issue_repository,
 			$this->pagespeed_client,
 			new Retry_Strategy( max_retries: 3, base_delay_ms: 0 ),
 			new Comparison_Service(),
 			$this->comparison_repository,
+		);
+
+		$this->service = new Audit_Service(
+			$this->url_repository,
+			$this->audit_repository,
+			$pipeline
 		);
 	}
 
