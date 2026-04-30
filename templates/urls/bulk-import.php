@@ -29,6 +29,7 @@ defined( 'ABSPATH' ) || exit;
 					<th scope="row"><?php esc_html_e( 'Source', 'leastudios-siteaudit' ); ?></th>
 					<td>
 						<fieldset>
+							<legend class="screen-reader-text"><span><?php esc_html_e( 'Import source', 'leastudios-siteaudit' ); ?></span></legend>
 							<label>
 								<input type="radio" name="import_type" value="paste" checked />
 								<?php esc_html_e( 'Paste URLs (one per line)', 'leastudios-siteaudit' ); ?>

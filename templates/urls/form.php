@@ -132,11 +132,14 @@ $threshold_drop  = $is_edit ? $url_model->alert_threshold_drop() : null;
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Status', 'leastudios-siteaudit' ); ?></th>
 						<td>
-							<input type="hidden" name="enabled" value="0" />
-							<label>
-								<input type="checkbox" name="enabled" value="1" <?php checked( $enabled_value ); ?> />
-								<?php esc_html_e( 'Include in scheduled audits', 'leastudios-siteaudit' ); ?>
-							</label>
+							<fieldset>
+								<legend class="screen-reader-text"><span><?php esc_html_e( 'Status', 'leastudios-siteaudit' ); ?></span></legend>
+								<input type="hidden" name="enabled" value="0" />
+								<label>
+									<input type="checkbox" name="enabled" value="1" <?php checked( $enabled_value ); ?> />
+									<?php esc_html_e( 'Include in scheduled audits', 'leastudios-siteaudit' ); ?>
+								</label>
+							</fieldset>
 						</td>
 					</tr>
 				<?php endif; ?>
@@ -144,11 +147,14 @@ $threshold_drop  = $is_edit ? $url_model->alert_threshold_drop() : null;
 				<tr>
 					<th scope="row"><?php esc_html_e( 'Alerts', 'leastudios-siteaudit' ); ?></th>
 					<td>
-						<input type="hidden" name="alerts_enabled" value="0" />
-						<label>
-							<input type="checkbox" name="alerts_enabled" value="1" <?php checked( $alerts_enabled ); ?> />
-							<?php esc_html_e( 'Enable threshold alert emails for this URL', 'leastudios-siteaudit' ); ?>
-						</label>
+						<fieldset>
+							<legend class="screen-reader-text"><span><?php esc_html_e( 'Alerts', 'leastudios-siteaudit' ); ?></span></legend>
+							<input type="hidden" name="alerts_enabled" value="0" />
+							<label>
+								<input type="checkbox" name="alerts_enabled" value="1" <?php checked( $alerts_enabled ); ?> />
+								<?php esc_html_e( 'Enable threshold alert emails for this URL', 'leastudios-siteaudit' ); ?>
+							</label>
+						</fieldset>
 					</td>
 				</tr>
 				<tr>

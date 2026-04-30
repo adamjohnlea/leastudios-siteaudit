@@ -112,7 +112,7 @@ $trend_arrow = match ( $trend->value ) {
 		</div>
 		<div class="lsa-stat">
 			<div class="lsa-stat__value <?php echo esc_attr( $trend_class ); ?>">
-				<?php echo esc_html( $trend_arrow ); ?> <?php echo esc_html( $trend->label() ); ?>
+				<span aria-hidden="true"><?php echo esc_html( $trend_arrow ); ?></span> <?php echo esc_html( $trend->label() ); ?>
 			</div>
 			<div class="lsa-stat__label"><?php esc_html_e( 'Trend', 'leastudios-siteaudit' ); ?></div>
 		</div>
