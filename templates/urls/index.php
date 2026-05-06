@@ -115,7 +115,7 @@ defined( 'ABSPATH' ) || exit;
 						<td>
 							<?php
 							if ( null !== $last_audited ) {
-								echo esc_html( \LEAStudios\SiteAudit\Shared\Datetime_Util::format_for_display( $last_audited, get_option( 'date_format', 'Y-m-d' ) ) );
+								echo esc_html( \LEAStudios\SiteAudit\Shared\Datetime_Util::format_immutable_for_display( $last_audited, get_option( 'date_format', 'Y-m-d' ) ) );
 							} else {
 								echo '&mdash;';
 							}
