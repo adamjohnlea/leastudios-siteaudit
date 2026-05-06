@@ -124,13 +124,21 @@ final class Plugin {
 	 * from `register_activation_hook` because Action Scheduler bootstraps on
 	 * `plugins_loaded` priority -10, which is later than activation callbacks.
 	 *
+	 * Concurrency: the transient cache and `as_has_scheduled_action` checks
+	 * are both non-atomic, so two simultaneous requests on a freshly-activated
+	 * site can both pass them and call `as_schedule_recurring_action` twice.
+	 * Empirically observed: that double-schedule then never replicates onto
+	 * the next interval, leaving the site with no tick at all once both
+	 * duplicates complete. We serialize the scheduling step with a DB-level
+	 * mutex via `add_option` (which performs an INSERT and fails if the
+	 * `option_name` row already exists — the only atomic primitive WP ships).
+	 *
 	 * @return void
 	 */
 	public function register_recurring_tick(): void {
-		// Once we've confirmed the recurring action is scheduled, cache the
-		// affirmative for an hour so we skip the AS lookup on every page
-		// load. We re-check on a 1h window so a manually-cleared schedule
-		// gets healed in at most an hour.
+		// Fast path: skip the AS lookup for an hour after we confirm scheduling.
+		// We re-check on a 1h window so a manually-cleared schedule gets healed
+		// in at most an hour.
 		if ( false !== get_transient( 'leastudios_siteaudit_tick_scheduled' ) ) {
 			return;
 		}
@@ -144,8 +152,39 @@ final class Plugin {
 			return;
 		}
 
-		as_schedule_recurring_action( time(), HOUR_IN_SECONDS, self::TICK_HOOK, [], 'leastudios-siteaudit' );
-		set_transient( 'leastudios_siteaudit_tick_scheduled', 1, HOUR_IN_SECONDS );
+		// Acquire the cross-request mutex. The lock value carries the
+		// acquisition timestamp so a process that fatals mid-schedule
+		// can't deadlock subsequent requests — we force-release any lock
+		// older than 60 seconds before attempting to take it.
+		$lock_key = 'leastudios_siteaudit_tick_lock';
+		$now      = time();
+
+		$existing_lock = get_option( $lock_key, false );
+		if ( false !== $existing_lock && ( $now - (int) $existing_lock ) > 60 ) {
+			delete_option( $lock_key );
+		}
+
+		if ( ! add_option( $lock_key, (string) $now, '', false ) ) {
+			// Another concurrent request holds the lock — let it finish.
+			return;
+		}
+
+		try {
+			// Re-verify under the lock: a sibling request may have just
+			// scheduled the action while we were taking the mutex.
+			if ( ! as_has_scheduled_action( self::TICK_HOOK ) ) {
+				as_schedule_recurring_action(
+					$now,
+					HOUR_IN_SECONDS,
+					self::TICK_HOOK,
+					[],
+					'leastudios-siteaudit'
+				);
+			}
+			set_transient( 'leastudios_siteaudit_tick_scheduled', 1, HOUR_IN_SECONDS );
+		} finally {
+			delete_option( $lock_key );
+		}
 	}
 
 	/**

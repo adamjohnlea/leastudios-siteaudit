@@ -43,6 +43,7 @@ final class Tick_Self_Heals_On_Init_Test extends TestCase {
 			as_unschedule_all_actions( Plugin::TICK_HOOK );
 		}
 		delete_transient( 'leastudios_siteaudit_tick_scheduled' );
+		delete_option( 'leastudios_siteaudit_tick_lock' );
 		parent::tear_down();
 	}
 
@@ -79,6 +80,49 @@ final class Tick_Self_Heals_On_Init_Test extends TestCase {
 		);
 		$this->assertCount( 1, $pending, 'Repeated calls must not stack duplicate recurring actions.' );
 		$this->assertSame( $first_action_id, $second_action_id );
+	}
+
+	public function test_register_recurring_tick_does_not_double_schedule_under_simulated_race(): void {
+		// Reproduces the live bug observed on a fresh install: two concurrent
+		// requests both hit `register_recurring_tick` before the transient
+		// guard could be set, and both called `as_schedule_recurring_action`,
+		// landing two pending tick rows at the same second. The double
+		// schedule then failed to replicate onto the next interval, leaving
+		// the site with no tick at all once both duplicates completed.
+		//
+		// We can't truly fork the request, but we can simulate the racing
+		// state: clear the transient between calls so the fast path can't
+		// short-circuit either invocation. Without the DB-level mutex, both
+		// calls reach `as_schedule_recurring_action` and stack duplicates.
+		$plugin = new Plugin();
+
+		$plugin->register_recurring_tick();
+		delete_transient( 'leastudios_siteaudit_tick_scheduled' );
+		$plugin->register_recurring_tick();
+		delete_transient( 'leastudios_siteaudit_tick_scheduled' );
+		$plugin->register_recurring_tick();
+
+		$pending = as_get_scheduled_actions(
+			[
+				'hook'   => Plugin::TICK_HOOK,
+				'status' => \ActionScheduler_Store::STATUS_PENDING,
+			],
+			'ids'
+		);
+		$this->assertCount( 1, $pending, 'Concurrent calls must not stack duplicate recurring actions even when the transient is cleared between them.' );
+	}
+
+	public function test_register_recurring_tick_recovers_from_a_stale_lock(): void {
+		// A process that fatals after acquiring the mutex but before
+		// releasing it must not be able to deadlock the schedule for all
+		// subsequent requests. We seed a >60s-old lock and confirm the
+		// next call force-releases it and proceeds to schedule.
+		add_option( 'leastudios_siteaudit_tick_lock', (string) ( time() - 120 ), '', false );
+
+		( new Plugin() )->register_recurring_tick();
+
+		$this->assertNotFalse( as_has_scheduled_action( Plugin::TICK_HOOK ), 'Stale lock must self-heal on next request.' );
+		$this->assertFalse( get_option( 'leastudios_siteaudit_tick_lock', false ), 'Lock must be released after a successful schedule.' );
 	}
 
 	public function test_register_recurring_tick_is_a_noop_when_action_scheduler_is_unavailable(): void {
