@@ -96,8 +96,9 @@ final class Csv_Export_Service_Test extends TestCase {
 
 	public function test_export_audits_converts_audit_date_from_utc_to_wp_timezone(): void {
 		// Audits are stored as UTC `DateTimeImmutable`s; the dashboard renders them in
-		// WP's display timezone via Datetime_Util::format_for_display. The CSV must
-		// match — otherwise spreadsheet readers see a different time than the admin UI.
+		// WP's display timezone via Datetime_Util::format_immutable_for_display. The CSV
+		// must match — otherwise spreadsheet readers see a different time than the
+		// admin UI.
 		update_option( 'timezone_string', 'America/Boise' );
 
 		$utc_date = new \DateTimeImmutable( '2024-01-15 06:30:00', new \DateTimeZone( 'UTC' ) );

@@ -61,7 +61,7 @@ defined( 'ABSPATH' ) || exit;
 							}
 							?>
 						</td>
-						<td><?php echo esc_html( \LEAStudios\SiteAudit\Shared\Datetime_Util::format_for_display( $project->created_at(), get_option( 'date_format', 'Y-m-d' ) ) ); ?></td>
+						<td><?php echo esc_html( \LEAStudios\SiteAudit\Shared\Datetime_Util::format_immutable_for_display( $project->created_at(), get_option( 'date_format', 'Y-m-d' ) ) ); ?></td>
 						<td>
 							<a href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'leastudios-siteaudit' ); ?></a>
 							<?php if ( current_user_can( \LEAStudios\SiteAudit\Capabilities::MANAGE ) ) : ?>
