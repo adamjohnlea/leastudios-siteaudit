@@ -4,7 +4,7 @@ Tags: accessibility, audit, pagespeed, a11y, monitoring
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.1
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -76,10 +76,16 @@ Deleting the plugin via the Plugins screen runs the uninstaller, which drops all
 
 == Changelog ==
 
+= 1.0.1 =
+* Fixed a race condition that could schedule the recurring audit tick twice on a freshly-activated site, which left some installs with no scheduled audits at all. Scheduling is now serialized with a database-level mutex.
+
 = 1.0.0 =
 * Initial public release. Complete port of the Beacon Audit standalone application: project + URL management, asynchronous audits via Action Scheduler, dashboards, CSV and PDF reports, threshold-breach alert emails, and per-project email subscriptions.
 
 == Upgrade Notice ==
+
+= 1.0.1 =
+Fixes a scheduling race that could prevent automatic audits from running. Recommended for all installs.
 
 = 1.0.0 =
 First public release.
