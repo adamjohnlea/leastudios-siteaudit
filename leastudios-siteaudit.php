@@ -5,7 +5,7 @@
  * Description:       Accessibility monitoring dashboard powered by the Google PageSpeed Insights API. Track scores over time, get email alerts on regressions, export PDF and CSV reports.
  * Version:           1.0.1
  * Requires at least: 6.4
- * Requires PHP:      8.1
+ * Requires PHP:      8.2
  * Author:            leaStudios
  * Author URI:        https://leastudios.com
  * License:           GPL-2.0-or-later
@@ -54,7 +54,7 @@ require_once __DIR__ . '/vendor/woocommerce/action-scheduler/action-scheduler.ph
  * @return void
  */
 function leastudios_siteaudit_init(): void {
-	if ( version_compare( PHP_VERSION, '8.1', '<' ) ) {
+	if ( version_compare( PHP_VERSION, '8.2', '<' ) ) {
 		add_action( 'admin_notices', 'leastudios_siteaudit_php_version_notice' );
 		return;
 	}
@@ -72,7 +72,7 @@ add_action( 'plugins_loaded', 'leastudios_siteaudit_init' );
 function leastudios_siteaudit_php_version_notice(): void {
 	printf(
 		'<div class="notice notice-error"><p>%s</p></div>',
-		esc_html__( 'LEA Studios Site Audit requires PHP 8.1 or higher.', 'leastudios-siteaudit' )
+		esc_html__( 'LEA Studios Site Audit requires PHP 8.2 or higher.', 'leastudios-siteaudit' )
 	);
 }
 
