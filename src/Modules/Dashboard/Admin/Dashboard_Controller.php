@@ -149,7 +149,7 @@ final class Dashboard_Controller {
 	 */
 	public function register_menu(): void {
 		add_menu_page(
-			__( 'LEA Studios Site Audit', 'leastudios-siteaudit' ),
+			__( 'leaStudios Site Audit', 'leastudios-siteaudit' ),
 			__( 'Site Audit', 'leastudios-siteaudit' ),
 			Capabilities::VIEW,
 			self::PARENT_SLUG,

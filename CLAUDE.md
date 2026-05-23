@@ -24,7 +24,7 @@ The directory is `leastudios-siteaudit`; the port plan calls the plugin `beacon-
 | Concern | Value |
 |---|---|
 | Plugin slug / dir / text domain | `leastudios-siteaudit` |
-| Display / menu title | `LEA Studios Site Audit` |
+| Display / menu title | `leaStudios Site Audit` |
 | Bootstrap file | `leastudios-siteaudit.php` |
 | Composer namespace root | `LEAStudios\SiteAudit\` |
 | Constants | `LEASTUDIOS_SITEAUDIT_VERSION` / `_FILE` / `_DIR` / `_URL` |

@@ -1,4 +1,4 @@
-# LEA Studios Site Audit
+# leaStudios Site Audit
 
 [![PHP](https://img.shields.io/badge/PHP-8.1%2B-777bb3)](#requirements) [![WordPress](https://img.shields.io/badge/WordPress-6.4%2B-21759b)](#requirements) [![License](https://img.shields.io/badge/License-GPL--2.0--or--later-blue)](LICENSE)
 
@@ -134,4 +134,4 @@ GPL-2.0-or-later. See [LICENSE](LICENSE).
 
 ## Author
 
-Built by [Adam Lea](https://leastudios.com) at LEA Studios.
+Built by [Adam Lea](https://leastudios.com) at leaStudios.

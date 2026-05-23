@@ -1,10 +1,10 @@
-=== LEA Studios Site Audit ===
+=== leaStudios Site Audit ===
 Contributors: leastudios
 Tags: accessibility, audit, pagespeed, a11y, monitoring
 Requires at least: 6.4
 Tested up to: 6.7
 Requires PHP: 8.2
-Stable tag: 1.0.1
+Stable tag: 1.0.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Accessibility monitoring dashboard for WordPress, powered by the Google PageSpee
 
 == Description ==
 
-LEA Studios Site Audit tracks accessibility scores across a portfolio of URLs over time. It calls the Google PageSpeed Insights API on a recurring schedule, stores per-strategy scores and issues in your database, and surfaces dashboards, trend graphs, alerts, and exportable reports inside the WordPress admin.
+leaStudios Site Audit tracks accessibility scores across a portfolio of URLs over time. It calls the Google PageSpeed Insights API on a recurring schedule, stores per-strategy scores and issues in your database, and surfaces dashboards, trend graphs, alerts, and exportable reports inside the WordPress admin.
 
 = Features =
 
@@ -76,6 +76,9 @@ Deleting the plugin via the Plugins screen runs the uninstaller, which drops all
 
 == Changelog ==
 
+= 1.0.2 =
+* Renamed the plugin display name from "LEA Studios Site Audit" to "leaStudios Site Audit" to match the rest of the leaStudios plugin suite. No functional changes.
+
 = 1.0.1 =
 * Fixed a race condition that could schedule the recurring audit tick twice on a freshly-activated site, which left some installs with no scheduled audits at all. Scheduling is now serialized with a database-level mutex.
 
@@ -83,6 +86,9 @@ Deleting the plugin via the Plugins screen runs the uninstaller, which drops all
 * Initial public release. Complete port of the Beacon Audit standalone application: project + URL management, asynchronous audits via Action Scheduler, dashboards, CSV and PDF reports, threshold-breach alert emails, and per-project email subscriptions.
 
 == Upgrade Notice ==
+
+= 1.0.2 =
+Cosmetic rename — plugin display name now matches the rest of the leaStudios suite. No data or behavior changes.
 
 = 1.0.1 =
 Fixes a scheduling race that could prevent automatic audits from running. Recommended for all installs.

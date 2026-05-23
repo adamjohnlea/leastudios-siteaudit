@@ -61,7 +61,7 @@ final class Api_Key_Notice {
 
 		printf(
 			'<div class="notice notice-warning"><p><strong>%s</strong>: %s <a href="%s">%s</a>.</p></div>',
-			esc_html__( 'LEA Studios Site Audit', 'leastudios-siteaudit' ),
+			esc_html__( 'leaStudios Site Audit', 'leastudios-siteaudit' ),
 			esc_html__( 'A Google PageSpeed Insights API key is required to run audits.', 'leastudios-siteaudit' ),
 			esc_url( $settings_url ),
 			esc_html__( 'Add your API key in Settings', 'leastudios-siteaudit' )

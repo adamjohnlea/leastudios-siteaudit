@@ -1,6 +1,6 @@
 <?php
 /**
- * Base test case for LEA Studios Site Audit tests.
+ * Base test case for leaStudios Site Audit tests.
  *
  * @package LEAStudios\SiteAudit
  */

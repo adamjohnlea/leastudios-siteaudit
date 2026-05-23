@@ -43,7 +43,7 @@ final class Privacy_Hooks {
 	 */
 	public function register_exporter( array $exporters ): array {
 		$exporters['leastudios-siteaudit-subscriptions'] = [
-			'exporter_friendly_name' => __( 'LEA Studios Site Audit — Project Subscriptions', 'leastudios-siteaudit' ),
+			'exporter_friendly_name' => __( 'leaStudios Site Audit — Project Subscriptions', 'leastudios-siteaudit' ),
 			'callback'               => [ $this, 'export_user_data' ],
 		];
 
@@ -58,7 +58,7 @@ final class Privacy_Hooks {
 	 */
 	public function register_eraser( array $erasers ): array {
 		$erasers['leastudios-siteaudit-subscriptions'] = [
-			'eraser_friendly_name' => __( 'LEA Studios Site Audit — Project Subscriptions', 'leastudios-siteaudit' ),
+			'eraser_friendly_name' => __( 'leaStudios Site Audit — Project Subscriptions', 'leastudios-siteaudit' ),
 			'callback'             => [ $this, 'erase_user_data' ],
 		];
 
@@ -101,7 +101,7 @@ final class Privacy_Hooks {
 			foreach ( $rows as $row ) {
 				$exported[] = [
 					'group_id'    => 'leastudios-siteaudit-subscriptions',
-					'group_label' => __( 'LEA Studios Site Audit — Project Subscriptions', 'leastudios-siteaudit' ),
+					'group_label' => __( 'leaStudios Site Audit — Project Subscriptions', 'leastudios-siteaudit' ),
 					'item_id'     => 'subscription-' . (int) $row['id'],
 					'data'        => [
 						[

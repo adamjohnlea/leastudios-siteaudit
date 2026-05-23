@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name:       LEA Studios Site Audit
+ * Plugin Name:       leaStudios Site Audit
  * Plugin URI:        https://leastudios.com/plugins/leastudios-siteaudit
  * Description:       Accessibility monitoring dashboard powered by the Google PageSpeed Insights API. Track scores over time, get email alerts on regressions, export PDF and CSV reports.
- * Version:           1.0.1
+ * Version:           1.0.2
  * Requires at least: 6.4
  * Requires PHP:      8.2
  * Author:            leaStudios
@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'LEASTUDIOS_SITEAUDIT_VERSION', '1.0.1' );
+define( 'LEASTUDIOS_SITEAUDIT_VERSION', '1.0.2' );
 define( 'LEASTUDIOS_SITEAUDIT_FILE', __FILE__ );
 define( 'LEASTUDIOS_SITEAUDIT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'LEASTUDIOS_SITEAUDIT_URL', plugin_dir_url( __FILE__ ) );
@@ -31,7 +31,7 @@ if ( ! file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 		function () {
 			printf(
 				'<div class="notice notice-error"><p><strong>%s</strong>: %s</p></div>',
-				esc_html__( 'LEA Studios Site Audit', 'leastudios-siteaudit' ),
+				esc_html__( 'leaStudios Site Audit', 'leastudios-siteaudit' ),
 				esc_html__( 'Plugin dependencies are missing. Run "composer install" in the plugin directory.', 'leastudios-siteaudit' )
 			);
 		}
@@ -72,7 +72,7 @@ add_action( 'plugins_loaded', 'leastudios_siteaudit_init' );
 function leastudios_siteaudit_php_version_notice(): void {
 	printf(
 		'<div class="notice notice-error"><p>%s</p></div>',
-		esc_html__( 'LEA Studios Site Audit requires PHP 8.2 or higher.', 'leastudios-siteaudit' )
+		esc_html__( 'leaStudios Site Audit requires PHP 8.2 or higher.', 'leastudios-siteaudit' )
 	);
 }
 

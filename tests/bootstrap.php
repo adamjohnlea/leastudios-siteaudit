@@ -1,6 +1,6 @@
 <?php
 /**
- * PHPUnit bootstrap for LEA Studios Site Audit.
+ * PHPUnit bootstrap for leaStudios Site Audit.
  *
  * @package LEAStudios\SiteAudit
  */

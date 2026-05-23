@@ -15,7 +15,7 @@ use LEAStudios\SiteAudit\Activation;
 use LEAStudios\SiteAudit\Capabilities;
 
 /**
- * Settings sub-page for the "LEA Studios Site Audit" admin menu.
+ * Settings sub-page for the "leaStudios Site Audit" admin menu.
  *
  * The top-level menu (and its Dashboard landing page) is registered by
  * `Dashboard_Controller`. This class owns only the Settings submenu and its
