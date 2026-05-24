@@ -76,9 +76,9 @@ defined( 'ABSPATH' ) || exit;
 					</th>
 					<td>
 						<select id="leastudios-siteaudit-bulk-frequency" name="frequency">
-							<?php foreach ( $frequencies as $frequency_case ) : ?>
-								<option value="<?php echo esc_attr( $frequency_case->value ); ?>" <?php selected( $frequency_case->value, 'weekly' ); ?>>
-									<?php echo esc_html( $frequency_case->label() ); ?>
+							<?php foreach ( $frequencies as $leastudios_siteaudit_frequency_case ) : ?>
+								<option value="<?php echo esc_attr( $leastudios_siteaudit_frequency_case->value ); ?>" <?php selected( $leastudios_siteaudit_frequency_case->value, 'weekly' ); ?>>
+									<?php echo esc_html( $leastudios_siteaudit_frequency_case->label() ); ?>
 								</option>
 							<?php endforeach; ?>
 						</select>
@@ -91,10 +91,10 @@ defined( 'ABSPATH' ) || exit;
 					<td>
 						<select id="leastudios-siteaudit-bulk-project" name="project_id">
 							<option value=""><?php esc_html_e( '— None —', 'leastudios-siteaudit' ); ?></option>
-							<?php foreach ( $projects as $project_option ) : ?>
-								<?php $option_id = (int) $project_option->id(); ?>
-								<option value="<?php echo esc_attr( (string) $option_id ); ?>">
-									<?php echo esc_html( $project_option->name()->value() ); ?>
+							<?php foreach ( $projects as $leastudios_siteaudit_project_option ) : ?>
+								<?php $leastudios_siteaudit_option_id = (int) $leastudios_siteaudit_project_option->id(); ?>
+								<option value="<?php echo esc_attr( (string) $leastudios_siteaudit_option_id ); ?>">
+									<?php echo esc_html( $leastudios_siteaudit_project_option->name()->value() ); ?>
 								</option>
 							<?php endforeach; ?>
 						</select>

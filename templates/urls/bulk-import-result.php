@@ -44,11 +44,11 @@ defined( 'ABSPATH' ) || exit;
 				</tr>
 			</thead>
 			<tbody>
-				<?php foreach ( $result->errors as $error_row ) : ?>
+				<?php foreach ( $result->errors as $leastudios_siteaudit_error_row ) : ?>
 					<tr>
-						<td><?php echo esc_html( (string) $error_row['line'] ); ?></td>
-						<td><code><?php echo esc_html( (string) $error_row['url'] ); ?></code></td>
-						<td><?php echo esc_html( (string) $error_row['error'] ); ?></td>
+						<td><?php echo esc_html( (string) $leastudios_siteaudit_error_row['line'] ); ?></td>
+						<td><code><?php echo esc_html( (string) $leastudios_siteaudit_error_row['url'] ); ?></code></td>
+						<td><?php echo esc_html( (string) $leastudios_siteaudit_error_row['error'] ); ?></td>
 					</tr>
 				<?php endforeach; ?>
 			</tbody>

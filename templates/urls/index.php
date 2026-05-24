@@ -60,35 +60,35 @@ defined( 'ABSPATH' ) || exit;
 				</tr>
 			</thead>
 			<tbody>
-				<?php foreach ( $urls as $url_model ) : ?>
+				<?php foreach ( $urls as $leastudios_siteaudit_url_model ) : ?>
 					<?php
-					$url_id        = (int) $url_model->id();
-					$edit_url      = add_query_arg(
+					$leastudios_siteaudit_url_id   = (int) $leastudios_siteaudit_url_model->id();
+					$leastudios_siteaudit_edit_url = add_query_arg(
 						[
 							'action' => 'edit',
-							'id'     => $url_id,
+							'id'     => $leastudios_siteaudit_url_id,
 						],
 						$edit_base_url
 					);
-					$project_id    = $url_model->project_id();
-					$project_label = '&mdash;';
+					$project_id                    = $leastudios_siteaudit_url_model->project_id();
+					$project_label                 = '&mdash;';
 					if ( null !== $project_id && isset( $projects_by_id[ $project_id ] ) ) {
 						$project_label = esc_html( $projects_by_id[ $project_id ]->name()->value() );
 					}
-					$last_audited  = $url_model->last_audited_at();
-					$row_scores    = $latest_scores[ $url_id ] ?? [];
+					$last_audited  = $leastudios_siteaudit_url_model->last_audited_at();
+					$row_scores    = $latest_scores[ $leastudios_siteaudit_url_id ] ?? [];
 					$desktop_score = $row_scores['desktop'] ?? null;
 					$mobile_score  = $row_scores['mobile'] ?? null;
 					?>
 					<tr>
 						<td>
 							<strong>
-								<a href="<?php echo esc_url( $edit_url ); ?>"><?php echo esc_html( (string) ( $url_model->name() ?? '' ) ); ?></a>
+								<a href="<?php echo esc_url( $leastudios_siteaudit_edit_url ); ?>"><?php echo esc_html( (string) ( $leastudios_siteaudit_url_model->name() ?? '' ) ); ?></a>
 							</strong>
 						</td>
 						<td>
-							<a href="<?php echo esc_url( $url_model->url()->value() ); ?>" target="_blank" rel="noreferrer noopener">
-								<?php echo esc_html( $url_model->url()->value() ); ?>
+							<a href="<?php echo esc_url( $leastudios_siteaudit_url_model->url()->value() ); ?>" target="_blank" rel="noreferrer noopener">
+								<?php echo esc_html( $leastudios_siteaudit_url_model->url()->value() ); ?>
 							</a>
 						</td>
 						<td>
@@ -97,10 +97,10 @@ defined( 'ABSPATH' ) || exit;
 							echo wp_kses_post( $project_label );
 							?>
 						</td>
-						<td><?php echo esc_html( $url_model->audit_frequency()->label() ); ?></td>
-						<td><?php echo esc_html( $url_model->audit_strategy()->label() ); ?></td>
+						<td><?php echo esc_html( $leastudios_siteaudit_url_model->audit_frequency()->label() ); ?></td>
+						<td><?php echo esc_html( $leastudios_siteaudit_url_model->audit_strategy()->label() ); ?></td>
 						<td>
-							<?php if ( $url_model->is_enabled() ) : ?>
+							<?php if ( $leastudios_siteaudit_url_model->is_enabled() ) : ?>
 								<span style="color:#1e7e34;font-weight:600;"><?php esc_html_e( 'Enabled', 'leastudios-siteaudit' ); ?></span>
 							<?php else : ?>
 								<span style="color:#6c757d;"><?php esc_html_e( 'Disabled', 'leastudios-siteaudit' ); ?></span>
@@ -122,18 +122,18 @@ defined( 'ABSPATH' ) || exit;
 							?>
 						</td>
 						<td>
-							<a href="<?php echo esc_url( $edit_url ); ?>"><?php esc_html_e( 'Edit', 'leastudios-siteaudit' ); ?></a>
+							<a href="<?php echo esc_url( $leastudios_siteaudit_edit_url ); ?>"><?php esc_html_e( 'Edit', 'leastudios-siteaudit' ); ?></a>
 							<?php if ( current_user_can( \LEAStudios\SiteAudit\Capabilities::MANAGE ) ) : ?>
 								| <form method="post" action="<?php echo esc_url( $run_audit_url ); ?>" style="display:inline">
 									<?php wp_nonce_field( $run_audit_action ); ?>
 									<input type="hidden" name="action" value="<?php echo esc_attr( $run_audit_action ); ?>" />
-									<input type="hidden" name="id" value="<?php echo esc_attr( (string) $url_id ); ?>" />
+									<input type="hidden" name="id" value="<?php echo esc_attr( (string) $leastudios_siteaudit_url_id ); ?>" />
 									<button type="submit" class="button-link"><?php esc_html_e( 'Run audit now', 'leastudios-siteaudit' ); ?></button>
 								</form>
 								| <form method="post" action="<?php echo esc_url( $delete_url ); ?>" style="display:inline" onsubmit="return confirm('<?php echo esc_js( __( 'Delete this URL? Audit history will be removed too.', 'leastudios-siteaudit' ) ); ?>');">
 									<?php wp_nonce_field( $delete_action ); ?>
 									<input type="hidden" name="action" value="<?php echo esc_attr( $delete_action ); ?>" />
-									<input type="hidden" name="id" value="<?php echo esc_attr( (string) $url_id ); ?>" />
+									<input type="hidden" name="id" value="<?php echo esc_attr( (string) $leastudios_siteaudit_url_id ); ?>" />
 									<button type="submit" class="button-link delete"><?php esc_html_e( 'Delete', 'leastudios-siteaudit' ); ?></button>
 								</form>
 							<?php endif; ?>
