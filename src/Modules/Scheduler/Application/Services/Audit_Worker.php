@@ -57,9 +57,12 @@ final class Audit_Worker {
 		// Lift the per-request timeout — Action Scheduler runs its own loopback
 		// requests via wp-cron, which inherit PHP's default `max_execution_time`.
 		// PageSpeed regularly exceeds 30s and `audit_strategy=both` runs two calls
-		// back-to-back, so we'd otherwise fatal mid-flight.
-		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- @ guards against environments where set_time_limit is disabled.
-		@set_time_limit( 0 );
+		// back-to-back, so we'd otherwise fatal mid-flight. Guard with
+		// function_exists() because some hosts disable set_time_limit via
+		// disable_functions.
+		if ( function_exists( 'set_time_limit' ) ) {
+			set_time_limit( 0 );
+		}
 
 		try {
 			$this->audit_service->run_audit( $url_id );
