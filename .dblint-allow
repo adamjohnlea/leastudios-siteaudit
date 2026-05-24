@@ -1,0 +1,13 @@
+# Files exempted from the DB-interpolation tripwire (bin/check-db-interpolation.sh).
+# Each line is a path relative to the plugin root.
+#
+# Every exemption MUST be paired with an inline rationale comment at the call site.
+# See ../leastudios-dev-tools/CLAUDE.md > Database for the underlying rule.
+
+# Wpdb_Issue_Repository::save_many: hard-coded per-row placeholder shape
+# (%d, %s, %s, NULL|%s, ...). Table goes through %i; user values via %s/%d.
+src/Modules/Audit/Infrastructure/Repositories/Wpdb_Issue_Repository.php
+
+# Wpdb_Audit_Repository::find_latest_scores_by_url_ids: dynamic IN (%d, %d, ...)
+# placeholder list. Table goes through %i.
+src/Modules/Audit/Infrastructure/Repositories/Wpdb_Audit_Repository.php
