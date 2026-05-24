@@ -4,7 +4,7 @@ Tags: accessibility, audit, pagespeed, a11y, monitoring
 Requires at least: 6.4
 Tested up to: 7.0
 Requires PHP: 8.2
-Stable tag: 1.0.5
+Stable tag: 1.0.6
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -75,6 +75,24 @@ Anyone with the `view_leastudios_siteaudit` capability. By default that is Admin
 Deleting the plugin via the Plugins screen runs the uninstaller, which drops all seven custom tables and removes plugin options.
 
 == Changelog ==
+
+= 1.0.6 — 2026-05-24 =
+
+* Changed: hardened SQL construction across the plugin for Plugin Check compliance — table-name interpolations converted to the `%i` placeholder (WordPress 6.2+).
+* Changed: every template-scope variable across the 13 admin templates is now fully prefixed (`$leastudios_siteaudit_*`) to satisfy Plugin Check's prefix rule. Caller-side `extract()` array keys updated to match.
+* Changed: `@set_time_limit(0)` silencer in `Audit_Worker` replaced with a `function_exists()` guard.
+* Internal: new `composer lint:db` tripwire (shared across the suite) blocks variable interpolation in `$wpdb` query construction; Plugin Check is now run against the release zip in CI to catch regressions before tag.
+* Docs: added developer handbook under `docs/developer-handbook.md`.
+
+= 1.0.5 =
+* Fix: derive `VERSION` constant from the plugin header so the runtime constant can never drift from the release-zip version.
+
+= 1.0.4 =
+* Internal: remove obsolete `.gitkeep` placeholders.
+
+= 1.0.3 =
+* Fix: declare compatibility with WordPress 7.0.
+* Internal: tag-triggered release workflow with auto-generated notes; CI hardening (gitleaks secret scan, dependency bumps).
 
 = 1.0.2 =
 * Renamed the plugin display name from "LEA Studios Site Audit" to "leaStudios Site Audit" to match the rest of the leaStudios plugin suite. No functional changes.

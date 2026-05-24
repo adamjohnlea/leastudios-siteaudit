@@ -3,7 +3,7 @@
  * Plugin Name:       leaStudios Site Audit
  * Plugin URI:        https://leastudios.com/plugins/leastudios-siteaudit
  * Description:       Accessibility monitoring dashboard powered by the Google PageSpeed Insights API. Track scores over time, get email alerts on regressions, export PDF and CSV reports.
- * Version:           1.0.5
+ * Version:           1.0.6
  * Requires at least: 6.4
  * Requires PHP:      8.2
  * Author:            leaStudios
