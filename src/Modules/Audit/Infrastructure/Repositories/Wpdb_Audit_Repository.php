@@ -107,7 +107,7 @@ final class Wpdb_Audit_Repository extends Wpdb_Repository_Base implements Audit_
 	 * @return Audit|null
 	 */
 	public function find_by_id( int $id ): ?Audit {
-		$sql = $this->wpdb->prepare( "SELECT * FROM `{$this->table}` WHERE id = %d", $id ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $this->wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', $this->table, $id );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$row = $this->wpdb->get_row( $sql, ARRAY_A );
@@ -123,7 +123,7 @@ final class Wpdb_Audit_Repository extends Wpdb_Repository_Base implements Audit_
 	 * @return array<int, Audit>
 	 */
 	public function find_by_url_id( int $url_id ): array {
-		$sql = $this->wpdb->prepare( "SELECT * FROM `{$this->table}` WHERE url_id = %d ORDER BY audit_date DESC", $url_id ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $this->wpdb->prepare( 'SELECT * FROM %i WHERE url_id = %d ORDER BY audit_date DESC', $this->table, $url_id );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$rows = $this->wpdb->get_results( $sql, ARRAY_A );
@@ -139,7 +139,7 @@ final class Wpdb_Audit_Repository extends Wpdb_Repository_Base implements Audit_
 	 * @return Audit|null
 	 */
 	public function find_latest_by_url_id( int $url_id ): ?Audit {
-		$sql = $this->wpdb->prepare( "SELECT * FROM `{$this->table}` WHERE url_id = %d ORDER BY audit_date DESC LIMIT 1", $url_id ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $this->wpdb->prepare( 'SELECT * FROM %i WHERE url_id = %d ORDER BY audit_date DESC LIMIT 1', $this->table, $url_id );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$row = $this->wpdb->get_row( $sql, ARRAY_A );
@@ -156,7 +156,7 @@ final class Wpdb_Audit_Repository extends Wpdb_Repository_Base implements Audit_
 	 * @return Audit|null
 	 */
 	public function find_latest_completed_by_url_id_and_strategy( int $url_id, Run_Strategy $strategy ): ?Audit {
-		$sql = $this->wpdb->prepare( "SELECT * FROM `{$this->table}` WHERE url_id = %d AND strategy = %s AND status = %s ORDER BY audit_date DESC LIMIT 1", $url_id, $strategy->value, Audit_Status::COMPLETED->value ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $this->wpdb->prepare( 'SELECT * FROM %i WHERE url_id = %d AND strategy = %s AND status = %s ORDER BY audit_date DESC LIMIT 1', $this->table, $url_id, $strategy->value, Audit_Status::COMPLETED->value );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$row = $this->wpdb->get_row( $sql, ARRAY_A );
@@ -181,19 +181,21 @@ final class Wpdb_Audit_Repository extends Wpdb_Repository_Base implements Audit_
 
 		$completed = Audit_Status::COMPLETED->value;
 
-		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// $placeholders is a whitelisted vocabulary of `%d` tokens; $this->table is bound via %i.
+		// PHPCS can't statically count placeholders against `array_merge(...)`, so silence the count check.
+		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 		$sql = $this->wpdb->prepare(
 			"SELECT a.url_id, a.strategy, a.score
-			 FROM `{$this->table}` a
+			 FROM %i a
 			 INNER JOIN (
 				 SELECT url_id, strategy, MAX(id) AS max_id
-				 FROM `{$this->table}`
+				 FROM %i
 				 WHERE status = %s AND url_id IN ({$placeholders})
 				 GROUP BY url_id, strategy
 			 ) latest ON a.id = latest.max_id",
-			array_merge( [ $completed ], $ids )
+			array_merge( [ $this->table, $this->table, $completed ], $ids )
 		);
-		// phpcs:enable
+		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$rows = $this->wpdb->get_results( $sql, ARRAY_A );

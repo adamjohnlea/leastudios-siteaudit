@@ -94,7 +94,7 @@ final class Wpdb_Url_Repository extends Wpdb_Repository_Base implements Url_Repo
 	 * @return Url|null
 	 */
 	public function find_by_id( int $id ): ?Url {
-		$sql = $this->wpdb->prepare( "SELECT * FROM `{$this->table}` WHERE id = %d", $id ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $this->wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', $this->table, $id );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$row = $this->wpdb->get_row( $sql, ARRAY_A );
@@ -108,8 +108,8 @@ final class Wpdb_Url_Repository extends Wpdb_Repository_Base implements Url_Repo
 	 * @return array<int, Url>
 	 */
 	public function find_all(): array {
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $this->wpdb->get_results( "SELECT * FROM `{$this->table}` ORDER BY name ASC", ARRAY_A );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $this->wpdb->get_results( $this->wpdb->prepare( 'SELECT * FROM %i ORDER BY name ASC', $this->table ), ARRAY_A );
 
 		return $this->hydrate_many( $rows );
 	}
@@ -122,7 +122,7 @@ final class Wpdb_Url_Repository extends Wpdb_Repository_Base implements Url_Repo
 	 * @return array<int, Url>
 	 */
 	public function find_by_project_id( int $project_id ): array {
-		$sql = $this->wpdb->prepare( "SELECT * FROM `{$this->table}` WHERE project_id = %d ORDER BY name ASC", $project_id ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $this->wpdb->prepare( 'SELECT * FROM %i WHERE project_id = %d ORDER BY name ASC', $this->table, $project_id );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$rows = $this->wpdb->get_results( $sql, ARRAY_A );
@@ -136,8 +136,8 @@ final class Wpdb_Url_Repository extends Wpdb_Repository_Base implements Url_Repo
 	 * @return array<int, Url>
 	 */
 	public function find_unassigned(): array {
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $this->wpdb->get_results( "SELECT * FROM `{$this->table}` WHERE project_id IS NULL ORDER BY name ASC", ARRAY_A );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $this->wpdb->get_results( $this->wpdb->prepare( 'SELECT * FROM %i WHERE project_id IS NULL ORDER BY name ASC', $this->table ), ARRAY_A );
 
 		return $this->hydrate_many( $rows );
 	}
@@ -148,8 +148,8 @@ final class Wpdb_Url_Repository extends Wpdb_Repository_Base implements Url_Repo
 	 * @return array<int, Url>
 	 */
 	public function find_enabled(): array {
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $this->wpdb->get_results( "SELECT * FROM `{$this->table}` WHERE enabled = 1 ORDER BY name ASC", ARRAY_A );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $this->wpdb->get_results( $this->wpdb->prepare( 'SELECT * FROM %i WHERE enabled = 1 ORDER BY name ASC', $this->table ), ARRAY_A );
 
 		return $this->hydrate_many( $rows );
 	}
@@ -174,14 +174,14 @@ final class Wpdb_Url_Repository extends Wpdb_Repository_Base implements Url_Repo
 		$audit_comparisons = Schema::table( Schema::TABLE_AUDIT_COMPARISONS );
 		$notifications     = Schema::table( Schema::TABLE_NOTIFICATIONS );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$this->wpdb->query( 'START TRANSACTION' );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-		$this->wpdb->query( $this->wpdb->prepare( "DELETE i FROM `{$issues}` AS i INNER JOIN `{$audits}` AS a ON i.audit_id = a.id WHERE a.url_id = %d", $id ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$this->wpdb->query( $this->wpdb->prepare( 'DELETE i FROM %i AS i INNER JOIN %i AS a ON i.audit_id = a.id WHERE a.url_id = %d', $issues, $audits, $id ) );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-		$this->wpdb->query( $this->wpdb->prepare( "DELETE c FROM `{$audit_comparisons}` AS c INNER JOIN `{$audits}` AS a ON c.current_audit_id = a.id OR c.previous_audit_id = a.id WHERE a.url_id = %d", $id ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$this->wpdb->query( $this->wpdb->prepare( 'DELETE c FROM %i AS c INNER JOIN %i AS a ON c.current_audit_id = a.id OR c.previous_audit_id = a.id WHERE a.url_id = %d', $audit_comparisons, $audits, $id ) );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$this->wpdb->delete( $notifications, [ 'url_id' => $id ], [ '%d' ] );
@@ -192,7 +192,7 @@ final class Wpdb_Url_Repository extends Wpdb_Repository_Base implements Url_Repo
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$this->wpdb->delete( $this->table, [ 'id' => $id ], [ '%d' ] );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$this->wpdb->query( 'COMMIT' );
 	}
 
@@ -204,7 +204,7 @@ final class Wpdb_Url_Repository extends Wpdb_Repository_Base implements Url_Repo
 	 * @return Url|null
 	 */
 	public function find_by_url( string $url ): ?Url {
-		$sql = $this->wpdb->prepare( "SELECT * FROM `{$this->table}` WHERE url = %s", $url ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $this->wpdb->prepare( 'SELECT * FROM %i WHERE url = %s', $this->table, $url );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$row = $this->wpdb->get_row( $sql, ARRAY_A );
@@ -226,9 +226,9 @@ final class Wpdb_Url_Repository extends Wpdb_Repository_Base implements Url_Repo
 
 		if ( '' !== $search ) {
 			$like = '%' . $this->wpdb->esc_like( $search ) . '%';
-			$sql  = $this->wpdb->prepare( "SELECT * FROM `{$this->table}` WHERE (url LIKE %s OR name LIKE %s) ORDER BY name ASC LIMIT %d OFFSET %d", $like, $like, $per_page, $offset ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$sql  = $this->wpdb->prepare( 'SELECT * FROM %i WHERE (url LIKE %s OR name LIKE %s) ORDER BY name ASC LIMIT %d OFFSET %d', $this->table, $like, $like, $per_page, $offset );
 		} else {
-			$sql = $this->wpdb->prepare( "SELECT * FROM `{$this->table}` ORDER BY name ASC LIMIT %d OFFSET %d", $per_page, $offset ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$sql = $this->wpdb->prepare( 'SELECT * FROM %i ORDER BY name ASC LIMIT %d OFFSET %d', $this->table, $per_page, $offset );
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
@@ -247,12 +247,12 @@ final class Wpdb_Url_Repository extends Wpdb_Repository_Base implements Url_Repo
 	public function count_for_search( string $search = '' ): int {
 		if ( '' !== $search ) {
 			$like = '%' . $this->wpdb->esc_like( $search ) . '%';
-			$sql  = $this->wpdb->prepare( "SELECT COUNT(*) FROM `{$this->table}` WHERE url LIKE %s OR name LIKE %s", $like, $like ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$sql  = $this->wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE url LIKE %s OR name LIKE %s', $this->table, $like, $like );
 		} else {
-			$sql = "SELECT COUNT(*) FROM `{$this->table}`";
+			$sql = $this->wpdb->prepare( 'SELECT COUNT(*) FROM %i', $this->table );
 		}
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$count = $this->wpdb->get_var( $sql );
 
 		return (int) $count;

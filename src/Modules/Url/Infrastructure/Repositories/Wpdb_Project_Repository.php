@@ -102,7 +102,7 @@ final class Wpdb_Project_Repository extends Wpdb_Repository_Base implements Proj
 	 * @return Project|null
 	 */
 	public function find_by_id( int $id ): ?Project {
-		$sql = $this->wpdb->prepare( "SELECT * FROM `{$this->table}` WHERE id = %d", $id ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $this->wpdb->prepare( 'SELECT * FROM %i WHERE id = %d', $this->table, $id );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$row = $this->wpdb->get_row( $sql, ARRAY_A );
@@ -118,7 +118,7 @@ final class Wpdb_Project_Repository extends Wpdb_Repository_Base implements Proj
 	 * @return Project|null
 	 */
 	public function find_by_name( string $name ): ?Project {
-		$sql = $this->wpdb->prepare( "SELECT * FROM `{$this->table}` WHERE name = %s", $name ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $this->wpdb->prepare( 'SELECT * FROM %i WHERE name = %s', $this->table, $name );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$row = $this->wpdb->get_row( $sql, ARRAY_A );
@@ -132,8 +132,8 @@ final class Wpdb_Project_Repository extends Wpdb_Repository_Base implements Proj
 	 * @return array<int, Project>
 	 */
 	public function find_all(): array {
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-		$rows = $this->wpdb->get_results( "SELECT * FROM `{$this->table}` ORDER BY name ASC", ARRAY_A );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$rows = $this->wpdb->get_results( $this->wpdb->prepare( 'SELECT * FROM %i ORDER BY name ASC', $this->table ), ARRAY_A );
 
 		if ( ! is_array( $rows ) ) {
 			return [];
@@ -167,21 +167,21 @@ final class Wpdb_Project_Repository extends Wpdb_Repository_Base implements Proj
 		$notifications_table     = Schema::table( Schema::TABLE_NOTIFICATIONS );
 		$subscriptions_table     = Schema::table( Schema::TABLE_EMAIL_SUBSCRIPTIONS );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$this->wpdb->query( 'START TRANSACTION' );
 
 		// Delete every audit-derived row that belongs to URLs in this project.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-		$this->wpdb->query( $this->wpdb->prepare( "DELETE i FROM `{$issues_table}` AS i INNER JOIN `{$audits_table}` AS a ON i.audit_id = a.id INNER JOIN `{$urls_table}` AS u ON a.url_id = u.id WHERE u.project_id = %d", $id ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$this->wpdb->query( $this->wpdb->prepare( 'DELETE i FROM %i AS i INNER JOIN %i AS a ON i.audit_id = a.id INNER JOIN %i AS u ON a.url_id = u.id WHERE u.project_id = %d', $issues_table, $audits_table, $urls_table, $id ) );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-		$this->wpdb->query( $this->wpdb->prepare( "DELETE c FROM `{$audit_comparisons_table}` AS c INNER JOIN `{$audits_table}` AS a ON c.current_audit_id = a.id OR c.previous_audit_id = a.id INNER JOIN `{$urls_table}` AS u ON a.url_id = u.id WHERE u.project_id = %d", $id ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$this->wpdb->query( $this->wpdb->prepare( 'DELETE c FROM %i AS c INNER JOIN %i AS a ON c.current_audit_id = a.id OR c.previous_audit_id = a.id INNER JOIN %i AS u ON a.url_id = u.id WHERE u.project_id = %d', $audit_comparisons_table, $audits_table, $urls_table, $id ) );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-		$this->wpdb->query( $this->wpdb->prepare( "DELETE n FROM `{$notifications_table}` AS n INNER JOIN `{$urls_table}` AS u ON n.url_id = u.id WHERE u.project_id = %d", $id ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$this->wpdb->query( $this->wpdb->prepare( 'DELETE n FROM %i AS n INNER JOIN %i AS u ON n.url_id = u.id WHERE u.project_id = %d', $notifications_table, $urls_table, $id ) );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-		$this->wpdb->query( $this->wpdb->prepare( "DELETE a FROM `{$audits_table}` AS a INNER JOIN `{$urls_table}` AS u ON a.url_id = u.id WHERE u.project_id = %d", $id ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		$this->wpdb->query( $this->wpdb->prepare( 'DELETE a FROM %i AS a INNER JOIN %i AS u ON a.url_id = u.id WHERE u.project_id = %d', $audits_table, $urls_table, $id ) );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$this->wpdb->delete( $urls_table, [ 'project_id' => $id ], [ '%d' ] );
@@ -192,7 +192,7 @@ final class Wpdb_Project_Repository extends Wpdb_Repository_Base implements Proj
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$this->wpdb->delete( $this->table, [ 'id' => $id ], [ '%d' ] );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$this->wpdb->query( 'COMMIT' );
 	}
 

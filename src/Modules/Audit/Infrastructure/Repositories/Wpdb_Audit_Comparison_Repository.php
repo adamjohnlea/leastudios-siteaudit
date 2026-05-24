@@ -83,7 +83,7 @@ final class Wpdb_Audit_Comparison_Repository extends Wpdb_Repository_Base implem
 	 * @return Audit_Comparison|null
 	 */
 	public function find_by_current_audit_id( int $current_audit_id ): ?Audit_Comparison {
-		$sql = $this->wpdb->prepare( "SELECT * FROM `{$this->table}` WHERE current_audit_id = %d", $current_audit_id ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $this->wpdb->prepare( 'SELECT * FROM %i WHERE current_audit_id = %d', $this->table, $current_audit_id );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$row = $this->wpdb->get_row( $sql, ARRAY_A );
@@ -99,15 +99,15 @@ final class Wpdb_Audit_Comparison_Repository extends Wpdb_Repository_Base implem
 	 * @return array<int, Audit_Comparison>
 	 */
 	public function find_by_url_id( int $url_id ): array {
-		// phpcs:disable WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$sql = $this->wpdb->prepare(
-			"SELECT ac.* FROM `{$this->table}` ac
-			 INNER JOIN `{$this->audits_table}` a ON ac.current_audit_id = a.id
+			'SELECT ac.* FROM %i ac
+			 INNER JOIN %i a ON ac.current_audit_id = a.id
 			 WHERE a.url_id = %d
-			 ORDER BY ac.created_at DESC",
+			 ORDER BY ac.created_at DESC',
+			$this->table,
+			$this->audits_table,
 			$url_id
 		);
-		// phpcs:enable
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$rows = $this->wpdb->get_results( $sql, ARRAY_A );

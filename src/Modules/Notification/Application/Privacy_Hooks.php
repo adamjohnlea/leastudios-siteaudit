@@ -85,15 +85,17 @@ final class Privacy_Hooks {
 		$subscriptions_table = Schema::table( Schema::TABLE_EMAIL_SUBSCRIPTIONS );
 		$projects_table      = Schema::table( Schema::TABLE_PROJECTS );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT s.id, s.project_id, s.created_at, p.name AS project_name FROM `{$subscriptions_table}` AS s LEFT JOIN `{$projects_table}` AS p ON p.id = s.project_id WHERE s.user_id = %d",
+				'SELECT s.id, s.project_id, s.created_at, p.name AS project_name FROM %i AS s LEFT JOIN %i AS p ON p.id = s.project_id WHERE s.user_id = %d',
+				$subscriptions_table,
+				$projects_table,
 				$user->ID
 			),
 			ARRAY_A
 		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 
 		$exported = [];
 

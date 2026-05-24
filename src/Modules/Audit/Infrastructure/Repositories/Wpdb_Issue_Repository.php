@@ -131,11 +131,12 @@ final class Wpdb_Issue_Repository extends Wpdb_Repository_Base implements Issue_
 			$args[] = $issue->created_at()->format( 'Y-m-d H:i:s' );
 		}
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name and per-row placeholder shape are hard-coded; user values flow through prepare().
-		$sql = "INSERT INTO `{$this->table}` (audit_id, severity, category, title, description, element_selector, help_url, created_at) VALUES " . implode( ', ', $row_placeholders );
+		// Per-row placeholder shape is hard-coded vocabulary (%d/%s/NULL); user values flow through prepare().
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Placeholder shape is whitelisted; $this->table is bound via %i.
+		$sql = 'INSERT INTO %i (audit_id, severity, category, title, description, element_selector, help_url, created_at) VALUES ' . implode( ', ', $row_placeholders );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
-		$this->wpdb->query( $this->wpdb->prepare( $sql, $args ) );
+		$this->wpdb->query( $this->wpdb->prepare( $sql, array_merge( [ $this->table ], $args ) ) );
 
 		return $issues;
 	}
@@ -148,7 +149,7 @@ final class Wpdb_Issue_Repository extends Wpdb_Repository_Base implements Issue_
 	 * @return array<int, Issue>
 	 */
 	public function find_by_audit_id( int $audit_id ): array {
-		$sql = $this->wpdb->prepare( "SELECT * FROM `{$this->table}` WHERE audit_id = %d ORDER BY severity ASC", $audit_id ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		$sql = $this->wpdb->prepare( 'SELECT * FROM %i WHERE audit_id = %d ORDER BY severity ASC', $this->table, $audit_id );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$rows = $this->wpdb->get_results( $sql, ARRAY_A );

@@ -49,8 +49,8 @@ final class Wpdb_Email_Subscription_Repository extends Wpdb_Repository_Base impl
 		// `INSERT IGNORE` skips rows that would violate the unique index;
 		// safer than a SELECT-then-INSERT race.
 		$sql = $this->wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $this->table is a class-controlled constant safely interpolated.
-			"INSERT IGNORE INTO {$this->table} (user_id, project_id, created_at) VALUES (%d, %d, %s)",
+			'INSERT IGNORE INTO %i (user_id, project_id, created_at) VALUES (%d, %d, %s)',
+			$this->table,
 			$user_id,
 			$project_id,
 			Datetime_Util::now()->format( 'Y-m-d H:i:s' )
@@ -90,8 +90,8 @@ final class Wpdb_Email_Subscription_Repository extends Wpdb_Repository_Base impl
 	 */
 	public function is_subscribed( int $user_id, int $project_id ): bool {
 		$sql = $this->wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $this->table is a class-controlled constant safely interpolated.
-			"SELECT COUNT(*) FROM {$this->table} WHERE user_id = %d AND project_id = %d",
+			'SELECT COUNT(*) FROM %i WHERE user_id = %d AND project_id = %d',
+			$this->table,
 			$user_id,
 			$project_id
 		);
@@ -111,8 +111,8 @@ final class Wpdb_Email_Subscription_Repository extends Wpdb_Repository_Base impl
 	 */
 	public function find_subscribers_by_project_id( int $project_id ): array {
 		$sql = $this->wpdb->prepare(
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $this->table is a class-controlled constant safely interpolated.
-			"SELECT user_id FROM {$this->table} WHERE project_id = %d ORDER BY id ASC",
+			'SELECT user_id FROM %i WHERE project_id = %d ORDER BY id ASC',
+			$this->table,
 			$project_id
 		);
 
