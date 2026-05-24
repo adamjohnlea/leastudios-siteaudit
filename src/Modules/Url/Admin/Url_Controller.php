@@ -209,22 +209,22 @@ final class Url_Controller {
 		$this->template_renderer->render(
 			'urls/index.php',
 			[
-				'urls'             => $urls,
-				'projects_by_id'   => $projects_map,
-				'latest_scores'    => $latest_scores,
-				'total'            => $total,
-				'page'             => $page,
-				'total_pages'      => $total_pages,
-				'per_page'         => self::PER_PAGE,
-				'search'           => $search,
-				'list_url'         => $this->list_url(),
-				'create_url'       => add_query_arg( 'action', 'create', $this->list_url() ),
-				'bulk_import_url'  => add_query_arg( 'action', 'bulk-import', $this->list_url() ),
-				'edit_base_url'    => $this->list_url(),
-				'delete_url'       => admin_url( 'admin-post.php' ),
-				'delete_action'    => self::ACTION_DELETE,
-				'run_audit_url'    => admin_url( 'admin-post.php' ),
-				'run_audit_action' => self::ACTION_RUN_AUDIT,
+				'leastudios_siteaudit_urls'             => $urls,
+				'leastudios_siteaudit_projects_by_id'   => $projects_map,
+				'leastudios_siteaudit_latest_scores'    => $latest_scores,
+				'leastudios_siteaudit_total'            => $total,
+				'leastudios_siteaudit_page'             => $page,
+				'leastudios_siteaudit_total_pages'      => $total_pages,
+				'leastudios_siteaudit_per_page'         => self::PER_PAGE,
+				'leastudios_siteaudit_search'           => $search,
+				'leastudios_siteaudit_list_url'         => $this->list_url(),
+				'leastudios_siteaudit_create_url'       => add_query_arg( 'action', 'create', $this->list_url() ),
+				'leastudios_siteaudit_bulk_import_url'  => add_query_arg( 'action', 'bulk-import', $this->list_url() ),
+				'leastudios_siteaudit_edit_base_url'    => $this->list_url(),
+				'leastudios_siteaudit_delete_url'       => admin_url( 'admin-post.php' ),
+				'leastudios_siteaudit_delete_action'    => self::ACTION_DELETE,
+				'leastudios_siteaudit_run_audit_url'    => admin_url( 'admin-post.php' ),
+				'leastudios_siteaudit_run_audit_action' => self::ACTION_RUN_AUDIT,
 			]
 		);
 	}
@@ -256,15 +256,15 @@ final class Url_Controller {
 		$this->template_renderer->render(
 			'urls/form.php',
 			[
-				'url_model'        => $url,
-				'projects'         => $this->project_service->find_all(),
-				'frequencies'      => Audit_Frequency::cases(),
-				'strategies'       => Audit_Strategy::cases(),
-				'post_url'         => admin_url( 'admin-post.php' ),
-				'list_url'         => $this->list_url(),
-				'create_action'    => self::ACTION_CREATE,
-				'update_action'    => self::ACTION_UPDATE,
-				'run_audit_action' => self::ACTION_RUN_AUDIT,
+				'leastudios_siteaudit_url_model'        => $url,
+				'leastudios_siteaudit_projects'         => $this->project_service->find_all(),
+				'leastudios_siteaudit_frequencies'      => Audit_Frequency::cases(),
+				'leastudios_siteaudit_strategies'       => Audit_Strategy::cases(),
+				'leastudios_siteaudit_post_url'         => admin_url( 'admin-post.php' ),
+				'leastudios_siteaudit_list_url'         => $this->list_url(),
+				'leastudios_siteaudit_create_action'    => self::ACTION_CREATE,
+				'leastudios_siteaudit_update_action'    => self::ACTION_UPDATE,
+				'leastudios_siteaudit_run_audit_action' => self::ACTION_RUN_AUDIT,
 			]
 		);
 	}
@@ -282,11 +282,11 @@ final class Url_Controller {
 		$this->template_renderer->render(
 			'urls/bulk-import.php',
 			[
-				'projects'    => $this->project_service->find_all(),
-				'frequencies' => Audit_Frequency::cases(),
-				'post_url'    => admin_url( 'admin-post.php' ),
-				'list_url'    => $this->list_url(),
-				'action_name' => self::ACTION_BULK_IMPORT,
+				'leastudios_siteaudit_projects'    => $this->project_service->find_all(),
+				'leastudios_siteaudit_frequencies' => Audit_Frequency::cases(),
+				'leastudios_siteaudit_post_url'    => admin_url( 'admin-post.php' ),
+				'leastudios_siteaudit_list_url'    => $this->list_url(),
+				'leastudios_siteaudit_action_name' => self::ACTION_BULK_IMPORT,
 			]
 		);
 	}
@@ -322,9 +322,9 @@ final class Url_Controller {
 		$this->template_renderer->render(
 			'urls/bulk-import-result.php',
 			[
-				'result'          => $result,
-				'list_url'        => $this->list_url(),
-				'bulk_import_url' => add_query_arg( 'action', 'bulk-import', $this->list_url() ),
+				'leastudios_siteaudit_result'          => $result,
+				'leastudios_siteaudit_list_url'        => $this->list_url(),
+				'leastudios_siteaudit_bulk_import_url' => add_query_arg( 'action', 'bulk-import', $this->list_url() ),
 			]
 		);
 	}

@@ -121,15 +121,15 @@ final class Alert_Notifier {
 		$body = $this->template_renderer->render_to_string(
 			'emails/alert-score.php',
 			[
-				'url_name'                 => $display_name,
-				'url_address'              => $url->url()->value(),
-				'current_score'            => $breach['current_score'],
-				'previous_score'           => $breach['previous_score'],
-				'score_drop'               => null !== $breach['previous_score'] ? $breach['previous_score'] - $breach['current_score'] : null,
-				'threshold_score'          => $threshold_score,
-				'threshold_drop'           => $threshold_drop,
-				'score_threshold_breached' => $breach['score_breached'],
-				'drop_threshold_breached'  => $breach['drop_breached'],
+				'leastudios_siteaudit_url_name'        => $display_name,
+				'leastudios_siteaudit_url_address'     => $url->url()->value(),
+				'leastudios_siteaudit_current_score'   => $breach['current_score'],
+				'leastudios_siteaudit_previous_score'  => $breach['previous_score'],
+				'leastudios_siteaudit_score_drop'      => null !== $breach['previous_score'] ? $breach['previous_score'] - $breach['current_score'] : null,
+				'leastudios_siteaudit_threshold_score' => $threshold_score,
+				'leastudios_siteaudit_threshold_drop'  => $threshold_drop,
+				'leastudios_siteaudit_score_threshold_breached' => $breach['score_breached'],
+				'leastudios_siteaudit_drop_threshold_breached' => $breach['drop_breached'],
 			]
 		);
 

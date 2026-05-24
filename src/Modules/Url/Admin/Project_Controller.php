@@ -120,11 +120,11 @@ final class Project_Controller {
 			$this->template_renderer->render(
 				'projects/form.php',
 				[
-					'project'       => $project,
-					'create_url'    => admin_url( 'admin-post.php' ),
-					'list_url'      => $this->list_url(),
-					'create_action' => self::ACTION_CREATE,
-					'update_action' => self::ACTION_UPDATE,
+					'leastudios_siteaudit_project'       => $project,
+					'leastudios_siteaudit_create_url'    => admin_url( 'admin-post.php' ),
+					'leastudios_siteaudit_list_url'      => $this->list_url(),
+					'leastudios_siteaudit_create_action' => self::ACTION_CREATE,
+					'leastudios_siteaudit_update_action' => self::ACTION_UPDATE,
 				]
 			);
 			return;
@@ -134,12 +134,12 @@ final class Project_Controller {
 		$this->template_renderer->render(
 			'projects/index.php',
 			[
-				'projects'      => $projects,
-				'list_url'      => $this->list_url(),
-				'create_url'    => add_query_arg( 'action', 'create', $this->list_url() ),
-				'edit_base_url' => $this->list_url(),
-				'delete_url'    => admin_url( 'admin-post.php' ),
-				'delete_action' => self::ACTION_DELETE,
+				'leastudios_siteaudit_projects'      => $projects,
+				'leastudios_siteaudit_list_url'      => $this->list_url(),
+				'leastudios_siteaudit_create_url'    => add_query_arg( 'action', 'create', $this->list_url() ),
+				'leastudios_siteaudit_edit_base_url' => $this->list_url(),
+				'leastudios_siteaudit_delete_url'    => admin_url( 'admin-post.php' ),
+				'leastudios_siteaudit_delete_action' => self::ACTION_DELETE,
 			]
 		);
 	}

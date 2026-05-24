@@ -4,11 +4,11 @@
  *
  * @package LEAStudios\SiteAudit
  *
- * @var string $project_name
- * @var string $date
- * @var int    $average_score
- * @var int    $total_urls
- * @var int    $total_issues
+ * @var string $leastudios_siteaudit_project_name
+ * @var string $leastudios_siteaudit_date
+ * @var int    $leastudios_siteaudit_average_score
+ * @var int    $leastudios_siteaudit_total_urls
+ * @var int    $leastudios_siteaudit_total_issues
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -22,7 +22,7 @@ defined( 'ABSPATH' ) || exit;
 	printf(
 		/* translators: %s: project name. */
 		esc_html__( 'Accessibility audit report: %s', 'leastudios-siteaudit' ),
-		esc_html( $project_name )
+		esc_html( $leastudios_siteaudit_project_name )
 	);
 	?>
 </h1>
@@ -32,7 +32,7 @@ defined( 'ABSPATH' ) || exit;
 	printf(
 		/* translators: %s: timestamp. */
 		esc_html__( 'Generated %s', 'leastudios-siteaudit' ),
-		esc_html( $date )
+		esc_html( $leastudios_siteaudit_date )
 	);
 	?>
 </p>
@@ -44,7 +44,7 @@ defined( 'ABSPATH' ) || exit;
 				<?php esc_html_e( 'Average score', 'leastudios-siteaudit' ); ?>
 			</div>
 			<div style="font-size: 20px; font-weight: 600; color: #1e7e34;">
-				<?php echo esc_html( (string) $average_score ); ?>
+				<?php echo esc_html( (string) $leastudios_siteaudit_average_score ); ?>
 			</div>
 		</td>
 		<td style="padding: 12px 14px; background: #f0f0f1; border-radius: 4px; width: 33%;">
@@ -52,7 +52,7 @@ defined( 'ABSPATH' ) || exit;
 				<?php esc_html_e( 'URLs', 'leastudios-siteaudit' ); ?>
 			</div>
 			<div style="font-size: 20px; font-weight: 600; color: #1d2327;">
-				<?php echo esc_html( (string) $total_urls ); ?>
+				<?php echo esc_html( (string) $leastudios_siteaudit_total_urls ); ?>
 			</div>
 		</td>
 		<td style="padding: 12px 14px; background: #fcf2d9; border-radius: 4px; width: 33%;">
@@ -60,7 +60,7 @@ defined( 'ABSPATH' ) || exit;
 				<?php esc_html_e( 'Total issues', 'leastudios-siteaudit' ); ?>
 			</div>
 			<div style="font-size: 20px; font-weight: 600; color: #8a5b00;">
-				<?php echo esc_html( (string) $total_issues ); ?>
+				<?php echo esc_html( (string) $leastudios_siteaudit_total_issues ); ?>
 			</div>
 		</td>
 	</tr>

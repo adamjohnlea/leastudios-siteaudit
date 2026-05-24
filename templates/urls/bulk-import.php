@@ -4,11 +4,11 @@
  *
  * @package LEAStudios\SiteAudit
  *
- * @var array<int, \LEAStudios\SiteAudit\Modules\Url\Domain\Models\Project> $projects
- * @var array<int, \LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Audit_Frequency> $frequencies
- * @var string $post_url
- * @var string $list_url
- * @var string $action_name
+ * @var array<int, \LEAStudios\SiteAudit\Modules\Url\Domain\Models\Project> $leastudios_siteaudit_projects
+ * @var array<int, \LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Audit_Frequency> $leastudios_siteaudit_frequencies
+ * @var string $leastudios_siteaudit_post_url
+ * @var string $leastudios_siteaudit_list_url
+ * @var string $leastudios_siteaudit_action_name
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -19,9 +19,9 @@ defined( 'ABSPATH' ) || exit;
 	<h1><?php esc_html_e( 'Bulk Import URLs', 'leastudios-siteaudit' ); ?></h1>
 	<p><?php esc_html_e( 'Add many URLs at once by pasting a list or uploading a CSV.', 'leastudios-siteaudit' ); ?></p>
 
-	<form method="post" action="<?php echo esc_url( $post_url ); ?>" enctype="multipart/form-data">
-		<?php wp_nonce_field( $action_name ); ?>
-		<input type="hidden" name="action" value="<?php echo esc_attr( $action_name ); ?>" />
+	<form method="post" action="<?php echo esc_url( $leastudios_siteaudit_post_url ); ?>" enctype="multipart/form-data">
+		<?php wp_nonce_field( $leastudios_siteaudit_action_name ); ?>
+		<input type="hidden" name="action" value="<?php echo esc_attr( $leastudios_siteaudit_action_name ); ?>" />
 
 		<table class="form-table" role="presentation">
 			<tbody>
@@ -76,7 +76,7 @@ defined( 'ABSPATH' ) || exit;
 					</th>
 					<td>
 						<select id="leastudios-siteaudit-bulk-frequency" name="frequency">
-							<?php foreach ( $frequencies as $leastudios_siteaudit_frequency_case ) : ?>
+							<?php foreach ( $leastudios_siteaudit_frequencies as $leastudios_siteaudit_frequency_case ) : ?>
 								<option value="<?php echo esc_attr( $leastudios_siteaudit_frequency_case->value ); ?>" <?php selected( $leastudios_siteaudit_frequency_case->value, 'weekly' ); ?>>
 									<?php echo esc_html( $leastudios_siteaudit_frequency_case->label() ); ?>
 								</option>
@@ -91,7 +91,7 @@ defined( 'ABSPATH' ) || exit;
 					<td>
 						<select id="leastudios-siteaudit-bulk-project" name="project_id">
 							<option value=""><?php esc_html_e( '— None —', 'leastudios-siteaudit' ); ?></option>
-							<?php foreach ( $projects as $leastudios_siteaudit_project_option ) : ?>
+							<?php foreach ( $leastudios_siteaudit_projects as $leastudios_siteaudit_project_option ) : ?>
 								<?php $leastudios_siteaudit_option_id = (int) $leastudios_siteaudit_project_option->id(); ?>
 								<option value="<?php echo esc_attr( (string) $leastudios_siteaudit_option_id ); ?>">
 									<?php echo esc_html( $leastudios_siteaudit_project_option->name()->value() ); ?>
@@ -105,7 +105,7 @@ defined( 'ABSPATH' ) || exit;
 
 		<p class="submit">
 			<?php submit_button( __( 'Import URLs', 'leastudios-siteaudit' ), 'primary', 'submit', false ); ?>
-			<a href="<?php echo esc_url( $list_url ); ?>" class="button"><?php esc_html_e( 'Cancel', 'leastudios-siteaudit' ); ?></a>
+			<a href="<?php echo esc_url( $leastudios_siteaudit_list_url ); ?>" class="button"><?php esc_html_e( 'Cancel', 'leastudios-siteaudit' ); ?></a>
 		</p>
 	</form>
 </div>

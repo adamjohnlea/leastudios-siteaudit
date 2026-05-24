@@ -174,11 +174,11 @@ final class Audit_Report_Notifier {
 		$body = $this->template_renderer->render_to_string(
 			'emails/audit-report.php',
 			[
-				'project_name'  => $project->name()->value(),
-				'date'          => wp_date( 'Y-m-d H:i' ),
-				'average_score' => $report->summary()->average_score(),
-				'total_urls'    => $report->summary()->total_urls(),
-				'total_issues'  => $report->total_issues(),
+				'leastudios_siteaudit_project_name'  => $project->name()->value(),
+				'leastudios_siteaudit_date'          => wp_date( 'Y-m-d H:i' ),
+				'leastudios_siteaudit_average_score' => $report->summary()->average_score(),
+				'leastudios_siteaudit_total_urls'    => $report->summary()->total_urls(),
+				'leastudios_siteaudit_total_issues'  => $report->total_issues(),
 			]
 		);
 

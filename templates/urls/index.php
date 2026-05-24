@@ -4,22 +4,22 @@
  *
  * @package LEAStudios\SiteAudit
  *
- * @var array<int, \LEAStudios\SiteAudit\Modules\Url\Domain\Models\Url> $urls
- * @var array<int, \LEAStudios\SiteAudit\Modules\Url\Domain\Models\Project> $projects_by_id
- * @var array<int, array{desktop?: int, mobile?: int}> $latest_scores
- * @var int $total
- * @var int $page
- * @var int $total_pages
- * @var int $per_page
- * @var string $search
- * @var string $list_url
- * @var string $create_url
- * @var string $bulk_import_url
- * @var string $edit_base_url
- * @var string $delete_url
- * @var string $delete_action
- * @var string $run_audit_url
- * @var string $run_audit_action
+ * @var array<int, \LEAStudios\SiteAudit\Modules\Url\Domain\Models\Url> $leastudios_siteaudit_urls
+ * @var array<int, \LEAStudios\SiteAudit\Modules\Url\Domain\Models\Project> $leastudios_siteaudit_projects_by_id
+ * @var array<int, array{desktop?: int, mobile?: int}> $leastudios_siteaudit_latest_scores
+ * @var int $leastudios_siteaudit_total
+ * @var int $leastudios_siteaudit_page
+ * @var int $leastudios_siteaudit_total_pages
+ * @var int $leastudios_siteaudit_per_page
+ * @var string $leastudios_siteaudit_search
+ * @var string $leastudios_siteaudit_list_url
+ * @var string $leastudios_siteaudit_create_url
+ * @var string $leastudios_siteaudit_bulk_import_url
+ * @var string $leastudios_siteaudit_edit_base_url
+ * @var string $leastudios_siteaudit_delete_url
+ * @var string $leastudios_siteaudit_delete_action
+ * @var string $leastudios_siteaudit_run_audit_url
+ * @var string $leastudios_siteaudit_run_audit_action
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -28,20 +28,20 @@ defined( 'ABSPATH' ) || exit;
 ?>
 <div class="wrap">
 	<h1 class="wp-heading-inline"><?php esc_html_e( 'URLs', 'leastudios-siteaudit' ); ?></h1>
-	<a href="<?php echo esc_url( $create_url ); ?>" class="page-title-action"><?php esc_html_e( 'Add URL', 'leastudios-siteaudit' ); ?></a>
-	<a href="<?php echo esc_url( $bulk_import_url ); ?>" class="page-title-action"><?php esc_html_e( 'Bulk Import', 'leastudios-siteaudit' ); ?></a>
+	<a href="<?php echo esc_url( $leastudios_siteaudit_create_url ); ?>" class="page-title-action"><?php esc_html_e( 'Add URL', 'leastudios-siteaudit' ); ?></a>
+	<a href="<?php echo esc_url( $leastudios_siteaudit_bulk_import_url ); ?>" class="page-title-action"><?php esc_html_e( 'Bulk Import', 'leastudios-siteaudit' ); ?></a>
 	<hr class="wp-header-end" />
 
 	<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
 		<input type="hidden" name="page" value="<?php echo esc_attr( \LEAStudios\SiteAudit\Modules\Url\Admin\Url_Controller::PAGE_SLUG ); ?>" />
 		<p class="search-box">
 			<label class="screen-reader-text" for="leastudios-siteaudit-url-search"><?php esc_html_e( 'Search URLs', 'leastudios-siteaudit' ); ?></label>
-			<input type="search" id="leastudios-siteaudit-url-search" name="s" value="<?php echo esc_attr( $search ); ?>" />
+			<input type="search" id="leastudios-siteaudit-url-search" name="s" value="<?php echo esc_attr( $leastudios_siteaudit_search ); ?>" />
 			<?php submit_button( __( 'Search URLs', 'leastudios-siteaudit' ), '', '', false ); ?>
 		</p>
 	</form>
 
-	<?php if ( empty( $urls ) ) : ?>
+	<?php if ( empty( $leastudios_siteaudit_urls ) ) : ?>
 		<p><?php esc_html_e( 'No URLs match your filters.', 'leastudios-siteaudit' ); ?></p>
 	<?php else : ?>
 		<table class="wp-list-table widefat striped">
@@ -60,25 +60,25 @@ defined( 'ABSPATH' ) || exit;
 				</tr>
 			</thead>
 			<tbody>
-				<?php foreach ( $urls as $leastudios_siteaudit_url_model ) : ?>
+				<?php foreach ( $leastudios_siteaudit_urls as $leastudios_siteaudit_url_model ) : ?>
 					<?php
-					$leastudios_siteaudit_url_id   = (int) $leastudios_siteaudit_url_model->id();
-					$leastudios_siteaudit_edit_url = add_query_arg(
+					$leastudios_siteaudit_url_id        = (int) $leastudios_siteaudit_url_model->id();
+					$leastudios_siteaudit_edit_url      = add_query_arg(
 						[
 							'action' => 'edit',
 							'id'     => $leastudios_siteaudit_url_id,
 						],
-						$edit_base_url
+						$leastudios_siteaudit_edit_base_url
 					);
-					$project_id                    = $leastudios_siteaudit_url_model->project_id();
-					$project_label                 = '&mdash;';
-					if ( null !== $project_id && isset( $projects_by_id[ $project_id ] ) ) {
-						$project_label = esc_html( $projects_by_id[ $project_id ]->name()->value() );
+					$leastudios_siteaudit_project_id    = $leastudios_siteaudit_url_model->project_id();
+					$leastudios_siteaudit_project_label = '&mdash;';
+					if ( null !== $leastudios_siteaudit_project_id && isset( $leastudios_siteaudit_projects_by_id[ $leastudios_siteaudit_project_id ] ) ) {
+						$leastudios_siteaudit_project_label = esc_html( $leastudios_siteaudit_projects_by_id[ $leastudios_siteaudit_project_id ]->name()->value() );
 					}
-					$last_audited  = $leastudios_siteaudit_url_model->last_audited_at();
-					$row_scores    = $latest_scores[ $leastudios_siteaudit_url_id ] ?? [];
-					$desktop_score = $row_scores['desktop'] ?? null;
-					$mobile_score  = $row_scores['mobile'] ?? null;
+					$leastudios_siteaudit_last_audited  = $leastudios_siteaudit_url_model->last_audited_at();
+					$leastudios_siteaudit_row_scores    = $leastudios_siteaudit_latest_scores[ $leastudios_siteaudit_url_id ] ?? [];
+					$leastudios_siteaudit_desktop_score = $leastudios_siteaudit_row_scores['desktop'] ?? null;
+					$leastudios_siteaudit_mobile_score  = $leastudios_siteaudit_row_scores['mobile'] ?? null;
 					?>
 					<tr>
 						<td>
@@ -94,7 +94,7 @@ defined( 'ABSPATH' ) || exit;
 						<td>
 							<?php
 							// Project label is pre-escaped where set; default literal is safe HTML.
-							echo wp_kses_post( $project_label );
+							echo wp_kses_post( $leastudios_siteaudit_project_label );
 							?>
 						</td>
 						<td><?php echo esc_html( $leastudios_siteaudit_url_model->audit_frequency()->label() ); ?></td>
@@ -107,15 +107,15 @@ defined( 'ABSPATH' ) || exit;
 							<?php endif; ?>
 						</td>
 						<td>
-							<?php echo null === $desktop_score ? '&mdash;' : esc_html( (string) $desktop_score ); ?>
+							<?php echo null === $leastudios_siteaudit_desktop_score ? '&mdash;' : esc_html( (string) $leastudios_siteaudit_desktop_score ); ?>
 						</td>
 						<td>
-							<?php echo null === $mobile_score ? '&mdash;' : esc_html( (string) $mobile_score ); ?>
+							<?php echo null === $leastudios_siteaudit_mobile_score ? '&mdash;' : esc_html( (string) $leastudios_siteaudit_mobile_score ); ?>
 						</td>
 						<td>
 							<?php
-							if ( null !== $last_audited ) {
-								echo esc_html( \LEAStudios\SiteAudit\Shared\Datetime_Util::format_immutable_for_display( $last_audited, get_option( 'date_format', 'Y-m-d' ) ) );
+							if ( null !== $leastudios_siteaudit_last_audited ) {
+								echo esc_html( \LEAStudios\SiteAudit\Shared\Datetime_Util::format_immutable_for_display( $leastudios_siteaudit_last_audited, get_option( 'date_format', 'Y-m-d' ) ) );
 							} else {
 								echo '&mdash;';
 							}
@@ -124,15 +124,15 @@ defined( 'ABSPATH' ) || exit;
 						<td>
 							<a href="<?php echo esc_url( $leastudios_siteaudit_edit_url ); ?>"><?php esc_html_e( 'Edit', 'leastudios-siteaudit' ); ?></a>
 							<?php if ( current_user_can( \LEAStudios\SiteAudit\Capabilities::MANAGE ) ) : ?>
-								| <form method="post" action="<?php echo esc_url( $run_audit_url ); ?>" style="display:inline">
-									<?php wp_nonce_field( $run_audit_action ); ?>
-									<input type="hidden" name="action" value="<?php echo esc_attr( $run_audit_action ); ?>" />
+								| <form method="post" action="<?php echo esc_url( $leastudios_siteaudit_run_audit_url ); ?>" style="display:inline">
+									<?php wp_nonce_field( $leastudios_siteaudit_run_audit_action ); ?>
+									<input type="hidden" name="action" value="<?php echo esc_attr( $leastudios_siteaudit_run_audit_action ); ?>" />
 									<input type="hidden" name="id" value="<?php echo esc_attr( (string) $leastudios_siteaudit_url_id ); ?>" />
 									<button type="submit" class="button-link"><?php esc_html_e( 'Run audit now', 'leastudios-siteaudit' ); ?></button>
 								</form>
-								| <form method="post" action="<?php echo esc_url( $delete_url ); ?>" style="display:inline" onsubmit="return confirm('<?php echo esc_js( __( 'Delete this URL? Audit history will be removed too.', 'leastudios-siteaudit' ) ); ?>');">
-									<?php wp_nonce_field( $delete_action ); ?>
-									<input type="hidden" name="action" value="<?php echo esc_attr( $delete_action ); ?>" />
+								| <form method="post" action="<?php echo esc_url( $leastudios_siteaudit_delete_url ); ?>" style="display:inline" onsubmit="return confirm('<?php echo esc_js( __( 'Delete this URL? Audit history will be removed too.', 'leastudios-siteaudit' ) ); ?>');">
+									<?php wp_nonce_field( $leastudios_siteaudit_delete_action ); ?>
+									<input type="hidden" name="action" value="<?php echo esc_attr( $leastudios_siteaudit_delete_action ); ?>" />
 									<input type="hidden" name="id" value="<?php echo esc_attr( (string) $leastudios_siteaudit_url_id ); ?>" />
 									<button type="submit" class="button-link delete"><?php esc_html_e( 'Delete', 'leastudios-siteaudit' ); ?></button>
 								</form>
@@ -143,38 +143,38 @@ defined( 'ABSPATH' ) || exit;
 			</tbody>
 		</table>
 
-		<?php if ( $total_pages > 1 ) : ?>
+		<?php if ( $leastudios_siteaudit_total_pages > 1 ) : ?>
 			<div class="tablenav bottom">
 				<div class="tablenav-pages">
 					<span class="displaying-num">
 						<?php
 						printf(
 							/* translators: %s: number of URLs. */
-							esc_html( _n( '%s item', '%s items', $total, 'leastudios-siteaudit' ) ),
-							esc_html( number_format_i18n( $total ) )
+							esc_html( _n( '%s item', '%s items', $leastudios_siteaudit_total, 'leastudios-siteaudit' ) ),
+							esc_html( number_format_i18n( $leastudios_siteaudit_total ) )
 						);
 						?>
 					</span>
 					<?php
-					$base_url = $list_url;
-					if ( '' !== $search ) {
-						$base_url = add_query_arg( 's', $search, $base_url );
+					$leastudios_siteaudit_base_url = $leastudios_siteaudit_list_url;
+					if ( '' !== $leastudios_siteaudit_search ) {
+						$leastudios_siteaudit_base_url = add_query_arg( 's', $leastudios_siteaudit_search, $leastudios_siteaudit_base_url );
 					}
 
-					$pagination_links = paginate_links(
+					$leastudios_siteaudit_pagination_links = paginate_links(
 						[
-							'base'      => add_query_arg( 'paged', '%#%', $base_url ),
+							'base'      => add_query_arg( 'paged', '%#%', $leastudios_siteaudit_base_url ),
 							'format'    => '',
-							'total'     => $total_pages,
-							'current'   => $page,
+							'total'     => $leastudios_siteaudit_total_pages,
+							'current'   => $leastudios_siteaudit_page,
 							'type'      => 'plain',
 							'prev_text' => __( '&laquo;', 'leastudios-siteaudit' ),
 							'next_text' => __( '&raquo;', 'leastudios-siteaudit' ),
 						]
 					);
 
-					if ( is_string( $pagination_links ) && '' !== $pagination_links ) {
-						echo wp_kses_post( $pagination_links );
+					if ( is_string( $leastudios_siteaudit_pagination_links ) && '' !== $leastudios_siteaudit_pagination_links ) {
+						echo wp_kses_post( $leastudios_siteaudit_pagination_links );
 					}
 					?>
 				</div>

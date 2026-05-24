@@ -4,9 +4,9 @@
  *
  * @package LEAStudios\SiteAudit
  *
- * @var \LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Bulk_Import_Result $result
- * @var string $list_url
- * @var string $bulk_import_url
+ * @var \LEAStudios\SiteAudit\Modules\Url\Domain\ValueObjects\Bulk_Import_Result $leastudios_siteaudit_result
+ * @var string $leastudios_siteaudit_list_url
+ * @var string $leastudios_siteaudit_bulk_import_url
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -20,20 +20,20 @@ defined( 'ABSPATH' ) || exit;
 		<tbody>
 			<tr>
 				<th scope="row"><?php esc_html_e( 'Imported', 'leastudios-siteaudit' ); ?></th>
-				<td><?php echo esc_html( number_format_i18n( $result->imported_count ) ); ?></td>
+				<td><?php echo esc_html( number_format_i18n( $leastudios_siteaudit_result->imported_count ) ); ?></td>
 			</tr>
 			<tr>
 				<th scope="row"><?php esc_html_e( 'Skipped (duplicates)', 'leastudios-siteaudit' ); ?></th>
-				<td><?php echo esc_html( number_format_i18n( $result->skipped_count ) ); ?></td>
+				<td><?php echo esc_html( number_format_i18n( $leastudios_siteaudit_result->skipped_count ) ); ?></td>
 			</tr>
 			<tr>
 				<th scope="row"><?php esc_html_e( 'Errors', 'leastudios-siteaudit' ); ?></th>
-				<td><?php echo esc_html( number_format_i18n( count( $result->errors ) ) ); ?></td>
+				<td><?php echo esc_html( number_format_i18n( count( $leastudios_siteaudit_result->errors ) ) ); ?></td>
 			</tr>
 		</tbody>
 	</table>
 
-	<?php if ( $result->has_errors() ) : ?>
+	<?php if ( $leastudios_siteaudit_result->has_errors() ) : ?>
 		<h2><?php esc_html_e( 'Rows with errors', 'leastudios-siteaudit' ); ?></h2>
 		<table class="wp-list-table widefat striped">
 			<thead>
@@ -44,7 +44,7 @@ defined( 'ABSPATH' ) || exit;
 				</tr>
 			</thead>
 			<tbody>
-				<?php foreach ( $result->errors as $leastudios_siteaudit_error_row ) : ?>
+				<?php foreach ( $leastudios_siteaudit_result->errors as $leastudios_siteaudit_error_row ) : ?>
 					<tr>
 						<td><?php echo esc_html( (string) $leastudios_siteaudit_error_row['line'] ); ?></td>
 						<td><code><?php echo esc_html( (string) $leastudios_siteaudit_error_row['url'] ); ?></code></td>
@@ -56,7 +56,7 @@ defined( 'ABSPATH' ) || exit;
 	<?php endif; ?>
 
 	<p class="submit">
-		<a href="<?php echo esc_url( $bulk_import_url ); ?>" class="button button-primary"><?php esc_html_e( 'Import More', 'leastudios-siteaudit' ); ?></a>
-		<a href="<?php echo esc_url( $list_url ); ?>" class="button"><?php esc_html_e( 'View All URLs', 'leastudios-siteaudit' ); ?></a>
+		<a href="<?php echo esc_url( $leastudios_siteaudit_bulk_import_url ); ?>" class="button button-primary"><?php esc_html_e( 'Import More', 'leastudios-siteaudit' ); ?></a>
+		<a href="<?php echo esc_url( $leastudios_siteaudit_list_url ); ?>" class="button"><?php esc_html_e( 'View All URLs', 'leastudios-siteaudit' ); ?></a>
 	</p>
 </div>

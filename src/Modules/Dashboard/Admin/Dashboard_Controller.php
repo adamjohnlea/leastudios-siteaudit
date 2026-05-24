@@ -241,10 +241,10 @@ final class Dashboard_Controller {
 		$this->template_renderer->render(
 			'dashboard/index.php',
 			[
-				'project_cards'      => $project_cards,
-				'unassigned_summary' => $unassigned_summary,
-				'has_any_urls'       => count( $unassigned_urls ) > 0 || count( $projects ) > 0,
-				'detail_base_url'    => $this->page_base_url(),
+				'leastudios_siteaudit_project_cards'      => $project_cards,
+				'leastudios_siteaudit_unassigned_summary' => $unassigned_summary,
+				'leastudios_siteaudit_has_any_urls'       => count( $unassigned_urls ) > 0 || count( $projects ) > 0,
+				'leastudios_siteaudit_detail_base_url'    => $this->page_base_url(),
 			]
 		);
 	}
@@ -287,12 +287,12 @@ final class Dashboard_Controller {
 		$this->template_renderer->render(
 			'dashboard/project.php',
 			[
-				'project'         => $project,
-				'summary'         => $summary,
-				'url_summaries'   => $url_summaries,
-				'is_subscribed'   => $is_subscribed,
-				'detail_base_url' => $this->page_base_url(),
-				'overview_url'    => $this->page_base_url(),
+				'leastudios_siteaudit_project'         => $project,
+				'leastudios_siteaudit_summary'         => $summary,
+				'leastudios_siteaudit_url_summaries'   => $url_summaries,
+				'leastudios_siteaudit_is_subscribed'   => $is_subscribed,
+				'leastudios_siteaudit_detail_base_url' => $this->page_base_url(),
+				'leastudios_siteaudit_overview_url'    => $this->page_base_url(),
 			]
 		);
 	}
@@ -341,20 +341,20 @@ final class Dashboard_Controller {
 		$this->template_renderer->render(
 			'dashboard/url.php',
 			[
-				'url'             => $url,
-				'project'         => $project,
-				'audits'          => $audits,
-				'trend'           => $trend,
-				'graph_data'      => $graph_data,
-				'average_score'   => $average_score,
-				'latest_score'    => $latest_score,
-				'desktop_issues'  => $desktop_issues,
-				'mobile_issues'   => $mobile_issues,
-				'has_desktop'     => null !== $latest_desktop,
-				'has_mobile'      => null !== $latest_mobile,
-				'active_tab'      => $tab,
-				'overview_url'    => $this->page_base_url(),
-				'detail_base_url' => $this->page_base_url(),
+				'leastudios_siteaudit_url'             => $url,
+				'leastudios_siteaudit_project'         => $project,
+				'leastudios_siteaudit_audits'          => $audits,
+				'leastudios_siteaudit_trend'           => $trend,
+				'leastudios_siteaudit_graph_data'      => $graph_data,
+				'leastudios_siteaudit_average_score'   => $average_score,
+				'leastudios_siteaudit_latest_score'    => $latest_score,
+				'leastudios_siteaudit_desktop_issues'  => $desktop_issues,
+				'leastudios_siteaudit_mobile_issues'   => $mobile_issues,
+				'leastudios_siteaudit_has_desktop'     => null !== $latest_desktop,
+				'leastudios_siteaudit_has_mobile'      => null !== $latest_mobile,
+				'leastudios_siteaudit_active_tab'      => $tab,
+				'leastudios_siteaudit_overview_url'    => $this->page_base_url(),
+				'leastudios_siteaudit_detail_base_url' => $this->page_base_url(),
 			]
 		);
 	}

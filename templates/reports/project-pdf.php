@@ -9,19 +9,19 @@
  *
  * @package LEAStudios\SiteAudit
  *
- * @var \LEAStudios\SiteAudit\Modules\Reporting\Domain\ValueObjects\Project_Report_Data $report
+ * @var \LEAStudios\SiteAudit\Modules\Reporting\Domain\ValueObjects\Project_Report_Data $leastudios_siteaudit_report
  */
 
 defined( 'ABSPATH' ) || exit;
 
-$summary            = $report->summary();
-$score_distribution = $summary->score_distribution();
-$severity_counts    = $report->severity_counts();
-$issues_by_category = $report->issues_by_category();
-$total_issues       = $report->total_issues();
-$category_count     = count( $issues_by_category );
+$leastudios_siteaudit_summary            = $leastudios_siteaudit_report->summary();
+$leastudios_siteaudit_score_distribution = $leastudios_siteaudit_summary->score_distribution();
+$leastudios_siteaudit_severity_counts    = $leastudios_siteaudit_report->severity_counts();
+$leastudios_siteaudit_issues_by_category = $leastudios_siteaudit_report->issues_by_category();
+$leastudios_siteaudit_total_issues       = $leastudios_siteaudit_report->total_issues();
+$leastudios_siteaudit_category_count     = count( $leastudios_siteaudit_issues_by_category );
 
-$score_color_class = static function ( ?int $score ): string {
+$leastudios_siteaudit_score_color_class = static function ( ?int $score ): string {
 	if ( null === $score ) {
 		return '';
 	}
@@ -33,7 +33,7 @@ $score_color_class = static function ( ?int $score ): string {
 	};
 };
 
-$grade_class = static function ( string $grade ): string {
+$leastudios_siteaudit_grade_class = static function ( string $grade ): string {
 	return match ( $grade ) {
 		'A'     => 'grade-a',
 		'B'     => 'grade-b',
@@ -96,13 +96,13 @@ $grade_class = static function ( string $grade ): string {
 <body>
 
 <div class="report-header">
-	<h1><?php echo esc_html( $report->project_name() ); ?></h1>
+	<h1><?php echo esc_html( $leastudios_siteaudit_report->project_name() ); ?></h1>
 	<div class="subtitle">
 		<?php
 		printf(
 			/* translators: %s: generated-at timestamp. */
 			esc_html__( 'Accessibility Audit Report &mdash; Generated %s', 'leastudios-siteaudit' ),
-			esc_html( $report->generated_at() )
+			esc_html( $leastudios_siteaudit_report->generated_at() )
 		);
 		?>
 	</div>
@@ -113,29 +113,29 @@ $grade_class = static function ( string $grade ): string {
 		<td>
 			<div class="stat-card">
 				<div class="stat-label"><?php esc_html_e( 'Total URLs', 'leastudios-siteaudit' ); ?></div>
-				<div class="stat-value"><?php echo esc_html( (string) $summary->total_urls() ); ?></div>
+				<div class="stat-value"><?php echo esc_html( (string) $leastudios_siteaudit_summary->total_urls() ); ?></div>
 			</div>
 		</td>
 		<td>
 			<div class="stat-card">
 				<div class="stat-label"><?php esc_html_e( 'Average Score', 'leastudios-siteaudit' ); ?></div>
-				<div class="stat-value <?php echo esc_attr( $score_color_class( $summary->average_score() ) ); ?>">
-					<?php echo esc_html( (string) $summary->average_score() ); ?>
+				<div class="stat-value <?php echo esc_attr( $leastudios_siteaudit_score_color_class( $leastudios_siteaudit_summary->average_score() ) ); ?>">
+					<?php echo esc_html( (string) $leastudios_siteaudit_summary->average_score() ); ?>
 				</div>
 			</div>
 		</td>
 		<td>
 			<div class="stat-card">
 				<div class="stat-label"><?php esc_html_e( 'Need Attention', 'leastudios-siteaudit' ); ?></div>
-				<div class="stat-value <?php echo $summary->urls_needing_attention() > 0 ? 'color-poor' : ''; ?>">
-					<?php echo esc_html( (string) $summary->urls_needing_attention() ); ?>
+				<div class="stat-value <?php echo $leastudios_siteaudit_summary->urls_needing_attention() > 0 ? 'color-poor' : ''; ?>">
+					<?php echo esc_html( (string) $leastudios_siteaudit_summary->urls_needing_attention() ); ?>
 				</div>
 			</div>
 		</td>
 		<td>
 			<div class="stat-card">
 				<div class="stat-label"><?php esc_html_e( 'Total Issues', 'leastudios-siteaudit' ); ?></div>
-				<div class="stat-value"><?php echo esc_html( (string) $total_issues ); ?></div>
+				<div class="stat-value"><?php echo esc_html( (string) $leastudios_siteaudit_total_issues ); ?></div>
 			</div>
 		</td>
 	</tr>
@@ -148,19 +148,19 @@ $grade_class = static function ( string $grade ): string {
 			<table cellspacing="0" style="width: 100%;">
 				<tr>
 					<td><span class="dist-label"><?php esc_html_e( 'Excellent (90-100)', 'leastudios-siteaudit' ); ?></span></td>
-					<td style="text-align: right;"><span class="dist-value color-excellent"><?php echo esc_html( (string) $score_distribution['excellent'] ); ?></span></td>
+					<td style="text-align: right;"><span class="dist-value color-excellent"><?php echo esc_html( (string) $leastudios_siteaudit_score_distribution['excellent'] ); ?></span></td>
 				</tr>
 				<tr>
 					<td><span class="dist-label"><?php esc_html_e( 'Good (70-89)', 'leastudios-siteaudit' ); ?></span></td>
-					<td style="text-align: right;"><span class="dist-value color-good"><?php echo esc_html( (string) $score_distribution['good'] ); ?></span></td>
+					<td style="text-align: right;"><span class="dist-value color-good"><?php echo esc_html( (string) $leastudios_siteaudit_score_distribution['good'] ); ?></span></td>
 				</tr>
 				<tr>
 					<td><span class="dist-label"><?php esc_html_e( 'Needs Work (50-69)', 'leastudios-siteaudit' ); ?></span></td>
-					<td style="text-align: right;"><span class="dist-value color-warn"><?php echo esc_html( (string) $score_distribution['needs_work'] ); ?></span></td>
+					<td style="text-align: right;"><span class="dist-value color-warn"><?php echo esc_html( (string) $leastudios_siteaudit_score_distribution['needs_work'] ); ?></span></td>
 				</tr>
 				<tr>
 					<td><span class="dist-label"><?php esc_html_e( 'Poor (0-49)', 'leastudios-siteaudit' ); ?></span></td>
-					<td style="text-align: right;"><span class="dist-value color-poor"><?php echo esc_html( (string) $score_distribution['poor'] ); ?></span></td>
+					<td style="text-align: right;"><span class="dist-value color-poor"><?php echo esc_html( (string) $leastudios_siteaudit_score_distribution['poor'] ); ?></span></td>
 				</tr>
 			</table>
 		</td>
@@ -169,19 +169,19 @@ $grade_class = static function ( string $grade ): string {
 			<table cellspacing="0" style="width: 100%;">
 				<tr>
 					<td><span class="badge badge-critical"><?php esc_html_e( 'Critical', 'leastudios-siteaudit' ); ?></span></td>
-					<td style="text-align: right;"><span class="dist-value"><?php echo esc_html( (string) $severity_counts['critical'] ); ?></span></td>
+					<td style="text-align: right;"><span class="dist-value"><?php echo esc_html( (string) $leastudios_siteaudit_severity_counts['critical'] ); ?></span></td>
 				</tr>
 				<tr>
 					<td><span class="badge badge-serious"><?php esc_html_e( 'Serious', 'leastudios-siteaudit' ); ?></span></td>
-					<td style="text-align: right;"><span class="dist-value"><?php echo esc_html( (string) $severity_counts['serious'] ); ?></span></td>
+					<td style="text-align: right;"><span class="dist-value"><?php echo esc_html( (string) $leastudios_siteaudit_severity_counts['serious'] ); ?></span></td>
 				</tr>
 				<tr>
 					<td><span class="badge badge-moderate"><?php esc_html_e( 'Moderate', 'leastudios-siteaudit' ); ?></span></td>
-					<td style="text-align: right;"><span class="dist-value"><?php echo esc_html( (string) $severity_counts['moderate'] ); ?></span></td>
+					<td style="text-align: right;"><span class="dist-value"><?php echo esc_html( (string) $leastudios_siteaudit_severity_counts['moderate'] ); ?></span></td>
 				</tr>
 				<tr>
 					<td><span class="badge badge-minor"><?php esc_html_e( 'Minor', 'leastudios-siteaudit' ); ?></span></td>
-					<td style="text-align: right;"><span class="dist-value"><?php echo esc_html( (string) $severity_counts['minor'] ); ?></span></td>
+					<td style="text-align: right;"><span class="dist-value"><?php echo esc_html( (string) $leastudios_siteaudit_severity_counts['minor'] ); ?></span></td>
 				</tr>
 			</table>
 		</td>
@@ -189,7 +189,7 @@ $grade_class = static function ( string $grade ): string {
 </table>
 
 <div class="section-title"><?php esc_html_e( 'URL Scores', 'leastudios-siteaudit' ); ?></div>
-<?php if ( [] === $report->url_summaries() ) : ?>
+<?php if ( [] === $leastudios_siteaudit_report->url_summaries() ) : ?>
 	<div class="empty-state"><?php esc_html_e( 'No URLs have been audited yet.', 'leastudios-siteaudit' ); ?></div>
 <?php else : ?>
 	<table class="url-table" cellspacing="0">
@@ -204,78 +204,78 @@ $grade_class = static function ( string $grade ): string {
 			</tr>
 		</thead>
 		<tbody>
-			<?php foreach ( $report->url_summaries() as $url_summary ) : ?>
-				<?php $latest_score = $url_summary->latest_score(); ?>
+			<?php foreach ( $leastudios_siteaudit_report->url_summaries() as $leastudios_siteaudit_url_summary ) : ?>
+				<?php $leastudios_siteaudit_latest_score = $leastudios_siteaudit_url_summary->latest_score(); ?>
 				<tr>
-					<td><strong><?php echo esc_html( $url_summary->name() ); ?></strong></td>
-					<td><?php echo esc_html( $url_summary->address() ); ?></td>
+					<td><strong><?php echo esc_html( $leastudios_siteaudit_url_summary->name() ); ?></strong></td>
+					<td><?php echo esc_html( $leastudios_siteaudit_url_summary->address() ); ?></td>
 					<td style="text-align: center;">
-						<?php if ( null !== $latest_score ) : ?>
-							<strong class="<?php echo esc_attr( $score_color_class( $latest_score ) ); ?>"><?php echo esc_html( (string) $latest_score ); ?></strong>
+						<?php if ( null !== $leastudios_siteaudit_latest_score ) : ?>
+							<strong class="<?php echo esc_attr( $leastudios_siteaudit_score_color_class( $leastudios_siteaudit_latest_score ) ); ?>"><?php echo esc_html( (string) $leastudios_siteaudit_latest_score ); ?></strong>
 						<?php else : ?>
 							&mdash;
 						<?php endif; ?>
 					</td>
 					<td style="text-align: center;">
-						<span class="grade <?php echo esc_attr( $grade_class( $url_summary->score_grade() ) ); ?>"><?php echo esc_html( $url_summary->score_grade() ); ?></span>
+						<span class="grade <?php echo esc_attr( $leastudios_siteaudit_grade_class( $leastudios_siteaudit_url_summary->score_grade() ) ); ?>"><?php echo esc_html( $leastudios_siteaudit_url_summary->score_grade() ); ?></span>
 					</td>
-					<td style="text-align: center;"><?php echo esc_html( (string) $url_summary->total_audits() ); ?></td>
-					<td><?php echo esc_html( $url_summary->frequency() ); ?></td>
+					<td style="text-align: center;"><?php echo esc_html( (string) $leastudios_siteaudit_url_summary->total_audits() ); ?></td>
+					<td><?php echo esc_html( $leastudios_siteaudit_url_summary->frequency() ); ?></td>
 				</tr>
 			<?php endforeach; ?>
 		</tbody>
 	</table>
 <?php endif; ?>
 
-<?php if ( [] !== $issues_by_category ) : ?>
+<?php if ( [] !== $leastudios_siteaudit_issues_by_category ) : ?>
 	<div class="page-break"></div>
 
 	<div class="report-header">
 		<h1><?php esc_html_e( 'Issue Breakdown', 'leastudios-siteaudit' ); ?></h1>
 		<div class="subtitle">
 			<?php
-			$issue_label = 1 === $total_issues
+			$leastudios_siteaudit_issue_label = 1 === $leastudios_siteaudit_total_issues
 				? __( '1 issue', 'leastudios-siteaudit' )
 				/* translators: %d: number of issues. */
-				: sprintf( __( '%d issues', 'leastudios-siteaudit' ), $total_issues );
-			$category_label = 1 === $category_count
+				: sprintf( __( '%d issues', 'leastudios-siteaudit' ), $leastudios_siteaudit_total_issues );
+			$leastudios_siteaudit_category_label = 1 === $leastudios_siteaudit_category_count
 				? __( '1 category', 'leastudios-siteaudit' )
 				/* translators: %d: number of categories. */
-				: sprintf( __( '%d categories', 'leastudios-siteaudit' ), $category_count );
+				: sprintf( __( '%d categories', 'leastudios-siteaudit' ), $leastudios_siteaudit_category_count );
 
 			printf(
 				'%s &mdash; %s %s %s',
-				esc_html( $report->project_name() ),
-				esc_html( $issue_label ),
+				esc_html( $leastudios_siteaudit_report->project_name() ),
+				esc_html( $leastudios_siteaudit_issue_label ),
 				esc_html__( 'across', 'leastudios-siteaudit' ),
-				esc_html( $category_label )
+				esc_html( $leastudios_siteaudit_category_label )
 			);
 			?>
 		</div>
 	</div>
 
-	<?php foreach ( $issues_by_category as $category => $issues ) : ?>
+	<?php foreach ( $leastudios_siteaudit_issues_by_category as $leastudios_siteaudit_category => $leastudios_siteaudit_issues ) : ?>
 		<div class="category-header">
-			<?php echo esc_html( $category ); ?> (<?php echo esc_html( (string) count( $issues ) ); ?>)
+			<?php echo esc_html( $leastudios_siteaudit_category ); ?> (<?php echo esc_html( (string) count( $leastudios_siteaudit_issues ) ); ?>)
 		</div>
-		<?php foreach ( $issues as $issue_row ) : ?>
+		<?php foreach ( $leastudios_siteaudit_issues as $leastudios_siteaudit_issue_row ) : ?>
 			<div class="issue-card">
 				<div class="issue-title">
-					<span class="badge badge-<?php echo esc_attr( strtolower( $issue_row['severity'] ) ); ?>">
-						<?php echo esc_html( $issue_row['severity'] ); ?>
+					<span class="badge badge-<?php echo esc_attr( strtolower( $leastudios_siteaudit_issue_row['severity'] ) ); ?>">
+						<?php echo esc_html( $leastudios_siteaudit_issue_row['severity'] ); ?>
 					</span>
-					<?php echo esc_html( $issue_row['title'] ); ?>
+					<?php echo esc_html( $leastudios_siteaudit_issue_row['title'] ); ?>
 				</div>
-				<div class="issue-description"><?php echo esc_html( $issue_row['description'] ); ?></div>
-				<?php if ( null !== $issue_row['help_url'] && '' !== $issue_row['help_url'] ) : ?>
+				<div class="issue-description"><?php echo esc_html( $leastudios_siteaudit_issue_row['description'] ); ?></div>
+				<?php if ( null !== $leastudios_siteaudit_issue_row['help_url'] && '' !== $leastudios_siteaudit_issue_row['help_url'] ) : ?>
 					<div class="issue-meta">
 						<?php esc_html_e( 'Learn more:', 'leastudios-siteaudit' ); ?>
-						<a href="<?php echo esc_url( $issue_row['help_url'] ); ?>"><?php echo esc_html( $issue_row['help_url'] ); ?></a>
+						<a href="<?php echo esc_url( $leastudios_siteaudit_issue_row['help_url'] ); ?>"><?php echo esc_html( $leastudios_siteaudit_issue_row['help_url'] ); ?></a>
 					</div>
 				<?php endif; ?>
 				<div class="affected-urls">
 					<?php esc_html_e( 'Affected:', 'leastudios-siteaudit' ); ?>
-					<?php echo esc_html( implode( ', ', $issue_row['affected_urls'] ) ); ?>
+					<?php echo esc_html( implode( ', ', $leastudios_siteaudit_issue_row['affected_urls'] ) ); ?>
 				</div>
 			</div>
 		<?php endforeach; ?>
@@ -287,7 +287,7 @@ $grade_class = static function ( string $grade ): string {
 	printf(
 		/* translators: %s: generated-at timestamp. */
 		esc_html__( 'Generated by leaStudios Site Audit &mdash; %s', 'leastudios-siteaudit' ),
-		esc_html( $report->generated_at() )
+		esc_html( $leastudios_siteaudit_report->generated_at() )
 	);
 	?>
 </div>

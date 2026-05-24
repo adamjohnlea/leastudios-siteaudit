@@ -6,15 +6,15 @@
  *
  * @package LEAStudios\SiteAudit
  *
- * @var string   $url_name
- * @var string   $url_address
- * @var int      $current_score
- * @var int|null $previous_score
- * @var int|null $score_drop
- * @var int|null $threshold_score
- * @var int|null $threshold_drop
- * @var bool     $score_threshold_breached
- * @var bool     $drop_threshold_breached
+ * @var string   $leastudios_siteaudit_url_name
+ * @var string   $leastudios_siteaudit_url_address
+ * @var int      $leastudios_siteaudit_current_score
+ * @var int|null $leastudios_siteaudit_previous_score
+ * @var int|null $leastudios_siteaudit_score_drop
+ * @var int|null $leastudios_siteaudit_threshold_score
+ * @var int|null $leastudios_siteaudit_threshold_drop
+ * @var bool     $leastudios_siteaudit_score_threshold_breached
+ * @var bool     $leastudios_siteaudit_drop_threshold_breached
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -28,9 +28,9 @@ defined( 'ABSPATH' ) || exit;
 </h1>
 
 <p style="font-size: 14px; line-height: 1.5; margin: 0 0 16px;">
-	<strong><?php echo esc_html( $url_name ); ?></strong><br />
-	<a href="<?php echo esc_url( $url_address ); ?>" style="color: #2563eb; text-decoration: none; font-size: 13px;">
-		<?php echo esc_html( $url_address ); ?>
+	<strong><?php echo esc_html( $leastudios_siteaudit_url_name ); ?></strong><br />
+	<a href="<?php echo esc_url( $leastudios_siteaudit_url_address ); ?>" style="color: #2563eb; text-decoration: none; font-size: 13px;">
+		<?php echo esc_html( $leastudios_siteaudit_url_address ); ?>
 	</a>
 </p>
 
@@ -40,43 +40,43 @@ defined( 'ABSPATH' ) || exit;
 		printf(
 			/* translators: %d: latest accessibility score (0-100). */
 			esc_html__( 'Latest score: %d', 'leastudios-siteaudit' ),
-			(int) $current_score
+			(int) $leastudios_siteaudit_current_score
 		);
 		?>
-		<?php if ( null !== $previous_score ) : ?>
+		<?php if ( null !== $leastudios_siteaudit_previous_score ) : ?>
 			<br />
 			<?php
 			printf(
 				/* translators: %d: previous accessibility score. */
 				esc_html__( 'Previous score: %d', 'leastudios-siteaudit' ),
-				(int) $previous_score
+				(int) $leastudios_siteaudit_previous_score
 			);
 			?>
 		<?php endif; ?>
 	</p>
 </div>
 
-<?php if ( $score_threshold_breached && null !== $threshold_score ) : ?>
+<?php if ( $leastudios_siteaudit_score_threshold_breached && null !== $leastudios_siteaudit_threshold_score ) : ?>
 	<p style="font-size: 14px; line-height: 1.5; margin: 0 0 12px;">
 		<?php
 		printf(
 			/* translators: 1: current score, 2: configured below-threshold. */
 			esc_html__( 'The latest score (%1$d) is at or below the configured alert threshold (%2$d).', 'leastudios-siteaudit' ),
-			(int) $current_score,
-			(int) $threshold_score
+			(int) $leastudios_siteaudit_current_score,
+			(int) $leastudios_siteaudit_threshold_score
 		);
 		?>
 	</p>
 <?php endif; ?>
 
-<?php if ( $drop_threshold_breached && null !== $threshold_drop && null !== $score_drop ) : ?>
+<?php if ( $leastudios_siteaudit_drop_threshold_breached && null !== $leastudios_siteaudit_threshold_drop && null !== $leastudios_siteaudit_score_drop ) : ?>
 	<p style="font-size: 14px; line-height: 1.5; margin: 0 0 12px;">
 		<?php
 		printf(
 			/* translators: 1: drop in points, 2: drop threshold. */
 			esc_html__( 'The score dropped by %1$d points, exceeding the configured drop threshold of %2$d.', 'leastudios-siteaudit' ),
-			(int) $score_drop,
-			(int) $threshold_drop
+			(int) $leastudios_siteaudit_score_drop,
+			(int) $leastudios_siteaudit_threshold_drop
 		);
 		?>
 	</p>

@@ -53,11 +53,11 @@ final class Pdf_Report_Service implements Pdf_Report_Service_Interface {
 	/**
 	 * Capture the project-PDF template's output as an HTML string.
 	 *
-	 * @param Project_Report_Data $report Project report data.
+	 * @param Project_Report_Data $leastudios_siteaudit_report Project report data.
 	 *
 	 * @return string
 	 */
-	private function render_template( Project_Report_Data $report ): string { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- $report is consumed by the included template via its lexical scope.
+	private function render_template( Project_Report_Data $leastudios_siteaudit_report ): string { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter.Found -- $leastudios_siteaudit_report is consumed by the included template via its lexical scope.
 		$file = LEASTUDIOS_SITEAUDIT_DIR . 'templates/reports/project-pdf.php';
 
 		ob_start();
