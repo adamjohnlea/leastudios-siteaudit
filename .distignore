@@ -10,6 +10,7 @@ phpcs.xml.dist
 phpstan.neon
 phpstan-bootstrap.php
 phpunit.xml.dist
+AGENTS.md
 CLAUDE.md
 README.md
 beacon-audit-wordpress-plugin-plan.md
